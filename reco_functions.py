@@ -4,6 +4,8 @@ import numpy as np
 
 USE_CUDA = os.getenv("USE_CUDA", "0") == "1"
 
+print(USE_CUDA)
+
 if USE_CUDA:
     import cupy as xp
 else:
@@ -51,14 +53,14 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
     signal_window = signal_window - baselines[:, :, None]
 
   if gain_list is not None:
-      gains = gain_list[None, :, None]
-      gain_is_high_window = gain_is_high[tuple(signal_window_3d_indices)]
-      signal_window *= np.where(gain_is_high_window, gains, 1)
+      gains = xp.asarray(gain_list[None, :, None])
+      gain_is_high_window = xp.asarray(gain_is_high)[tuple(signal_window_3d_indices)]
+      signal_window *= xp.where(gain_is_high_window, gains, 1)
 
   if intercalib_list is not None:
-    signal_window *= intercalib_list[None, :, None]
+    signal_window *= xp.asarray(intercalib_list[None, :, None])
 
-  values_max = np.max(signal_window, axis=2)
+  values_max = xp.max(signal_window, axis=2)
 
   mask_under_thr = values_max < charge_zerosup_peak_threshold
 
@@ -82,7 +84,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
 
   if geo_dict is not None:
     print(coords_2d_list)
-    ix, iy = (geo_dict[key] for key in coords_2d_list[:2])
+    ix, iy = (xp.asarray(geo_dict[key]) for key in coords_2d_list[:2])
     if coord_z is not None: iz = geo_dict[coord_z]
     else: iz = None
 
@@ -215,7 +217,10 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
     return_dict.update(per_ch_info)
 
   if USE_CUDA:
-    for br in return_dict: return_dict[br] = return_dict[br].asnumpy()
+
+    for br in return_dict:
+       return_dict[br] = xp.asnumpy(return_dict[br])
+    mask_selected_events = xp.asnumpy(mask_selected_events)
 
   return mask_selected_events, return_dict
 
