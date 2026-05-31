@@ -24,6 +24,24 @@ if (!file_exists($csvFile)) {
     echo "<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css' rel='stylesheet'>";
 
     echo "</head><body class='p-4'>";
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+    $parts = array_filter(explode('/', trim($requestUri, '/')));
+    $accum = '';
+    echo '<nav style="font-size:1rem; padding:8px 16px; background:#fff; border-bottom:1px solid #ddd;">';
+    echo '<a href="/" class="text-decoration-none">
+            🏠
+        </a>';
+    foreach (array_values($parts) as $i => $part) {
+        $accum .= '/' . $part;
+        echo ' / ';
+        if ($i < count($parts) - 1) {
+            echo '<a href="' . htmlspecialchars($accum) . '">' . htmlspecialchars($part) . '</a>';
+        } else {
+            echo '<span>' . htmlspecialchars($part) . '</span>';
+        }
+    }
+    echo '</nav>';
+
 
     echo "<h5 class='mt-4'>Available subfolders</h5>";
 
@@ -67,9 +85,44 @@ $rootfile = "../histos.root";
 $cardW = 400;
 $plotH = 300;
 
+
 if (!file_exists($rootfile)) {
-    die("ROOT file not found");
+    // Mostra il breadcrumb prima di uscire
+    ?>
+    <!DOCTYPE html><html><head><meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css">
+    </head><body>
+    <div class="container-fluid px-3 py-2 bg-white border-bottom">
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11/font/bootstrap-icons.min.css">
+      <?php
+      $parts = array_values(array_filter(explode('/', trim($_SERVER['REQUEST_URI'] ?? '/', '/'))));
+      $accum = '';
+      foreach ($parts as $i => $part) {
+          $accum .= '/' . $part;
+          echo ' / ';
+          if ($i < count($parts) - 1) {
+              echo '<a href="' . htmlspecialchars($accum) . '">' . htmlspecialchars($part) . '</a>';
+          } else {
+              echo htmlspecialchars($part);
+          }
+      }
+      ?>
+    </div>
+    <div class="container mt-4">
+      <h5>Available subfolders</h5>
+      <ul class="list-group">
+      <?php foreach (glob("./*", GLOB_ONLYDIR) as $dir): ?>
+        <li class="list-group-item">
+          <a href="<?= htmlspecialchars(basename($dir)) ?>"><?= htmlspecialchars(basename($dir)) ?></a>
+        </li>
+      <?php endforeach; ?>
+      </ul>
+    </div>
+    </body></html>
+    <?php
+    exit;
 }
+
 
 ?>
 
