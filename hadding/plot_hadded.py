@@ -1,9 +1,15 @@
 import os, json, argparse, sys, time, ROOT
+from pathlib import Path
 import pandas as pd
-import plot_functions_in_memory as plot_functions
+import sys
+
+from .. import plot_functions_in_memory as plot_functions
+
 from io import StringIO
 
 def main(arguments):
+
+    BASE_DIR = Path(__file__).resolve().parent
 
     # input parameters
     parser = argparse.ArgumentParser(description='')
@@ -24,15 +30,18 @@ def main(arguments):
 
     print(plotconf_df)
 
-    ROOT.gROOT.LoadMacro("root_logon.C")
+    ROOT.gROOT.LoadMacro(f"{BASE_DIR}/../root_logon.C")
     os.system(f"mkdir {args.plot_output_folder}")
 
-    if not os.path.exists(f"{args.plot_output_folder}/index.php"):
-        os.system(f"cp {args.plot_output_folder}/../index.php {args.plot_output_folder}/index.php")
-    if not os.path.exists(f"{args.plot_output_folder}/jsroot_viewer.php"):
-        os.system(f"cp {args.plot_output_folder}/../jsroot_viewer.php {args.plot_output_folder}/jsroot_viewer.php")
+    php_files = ["index", "view"]
+    for php_f in php_files:
+      os.system(f"/bin/cp {BASE_DIR}/../php/{php_f}.php {args.plot_output_folder}/{php_f}.php")
 
-    plotconf_df.apply(lambda row: plot_functions.plot(row, None, f"{args.plot_output_folder}/", just_draw=True), axis=1)
+    subfolders_list = []
+
+    f = {"canvases": ROOT.TFile(f"{args.plot_output_folder}/canvases.root", "recreate"), "histos": ROOT.TFile(f"{args.plot_output_folder}/histos.root")}
+
+    plotconf_df.apply(lambda row: plot_functions.plot(row, None, f"{args.plot_output_folder}/", subfolders_list, f=f, just_draw=True,php_files=php_files), axis=1)
 
     #chunk_size = (len(plotconf_df) + args.n_cpus - 1) // args.n_cpus  # ceil division
     #chunks = [(plotconf_df.iloc[i*chunk_size : (i+1)*chunk_size], None, args.plot_output_folder, {"just_draw": True}) for i in range(args.n_cpus)]

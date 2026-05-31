@@ -1,13 +1,35 @@
-void fileCheck(const char* filename, const char* objname) {
-    TFile *f = TFile::Open(filename);
+#include <TFile.h>
+#include <TKey.h>
+#include <TObject.h>
+#include <iostream>
+
+void fileCheck(const char* filename)
+{
+    TFile* f = TFile::Open(filename);
+
     if (!f || f->IsZombie()) {
         std::cout << "FILE_ZOMBIE" << std::endl;
         return;
     }
-    if (f->Get(objname)) {
-        std::cout << "FILE_OK" << std::endl;
-    } else {
-        std::cout << "FILE_NOT_FOUND" << std::endl;
+
+    TIter next(f->GetListOfKeys());
+    TKey* key = nullptr;
+
+    while ((key = (TKey*)next())) {
+
+        TObject* obj = key->ReadObj();
+
+        //std::cout << "read: " << key->GetName() << " OK!" << std::endl;
+        if (!obj) {
+            std::cout << "BROKEN_OBJECT " << key->GetName() << std::endl;
+            f->Close();
+            return;
+        }
+
+        delete obj;
     }
+
+    std::cout << "FILE_OK" << std::endl;
+
     f->Close();
 }

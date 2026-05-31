@@ -1,101 +1,94 @@
+#!/bin/bash
+
 start=$(date +%s%3N)  # milliseconds
-
-
-PLOT_LIST=$1 #abs path
-MAIN_FOLDER=$2
 
 option="beam"
 
-MAX_JOBS=14
+HADD_NOW_DIRS="${PLOT_MAIN_FOLDER}/to_hadd_now.txt"
+HADD_GLOB_BUFFER="${PLOT_MAIN_FOLDER}/to_hadd_buffer.txt"
 
-HADD_NOW_DIRS="$MAIN_FOLDER/to_hadd_now.txt"
-HADD_GLOB_BUFFER="$MAIN_FOLDER/to_hadd_buffer.txt"
+if [ ! -f "${HADD_NOW_DIRS}" ]; then
+    echo "no files to hadd in $HADD_NOW_DIRS"
+    return
+fi
 
-RUN_NO=$(cat ${HADD_NOW_DIRS} | tail -n 1 | awk -F "run_" '{print $2}' | awk -F "/" '{print $1}')
+RUN_NO=$(tail -n 1 "${HADD_NOW_DIRS}" \
+    | awk -F 'run_' '{print $2}' \
+        | awk -F '/' '{print $1}')
 
-echo $RUN_NO
+echo "RUN_NO = ${RUN_NO}"
 
-mkdir ${MAIN_FOLDER}/run_${RUN_NO}/${option}_all_spill/
+ALL_SPILL_DIR="${PLOT_MAIN_FOLDER}/run_${RUN_NO}/${option}_all_spill"
+
+FIRST_SPILL=$(grep "run_${RUN_NO}" "${HADD_NOW_DIRS}" | head -n 1)
+
+mkdir -p "${ALL_SPILL_DIR}"
 
 echo "hadding (output in /dev/null - to debug open the code...)"
 
-#/bin/cp ${MAIN_FOLDER}/*.php ${MAIN_FOLDER}/run_${RUN_NO}/${option}_all_spill/
-/bin/cp/ *.php ${MAIN_FOLDER}/run_${RUN_NO}/${option}_all_spill/
+# Copy helper php files if needed
+cp {PHP_FILES_DIR}/*.php "${ALL_SPILL_DIR}/"
 
-#sed 's/^ *//' | grep "^[^#;]" removes whitespaces at begin of line, and lines that are comments (starting with #)
+FILES=$(grep "run_${RUN_NO}" "${HADD_NOW_DIRS}" \
+    | awk '{print $1 "/histos.root"}' \
+        | tr '\n' ' ')
 
-pids=()
+DEST="${ALL_SPILL_DIR}/histos.root"
 
-header=$(head -n 1 $PLOT_LIST)
+echo "Input files:"
+echo "${FILES}"
 
-tail -n +2 $PLOT_LIST | sed 's/^ *//' | grep "^[^#;]" | while read plot || [[ -n $plot ]]; do
-  #echo $plot
-  name=$(echo $plot | awk -F "," '{print $1}')
-  subfolder=$(echo $plot | awk -F "," '{print $3}')
+time root -l -b -q "fileCheck.C(\"${DEST}\")" | grep "FILE_OK"
 
-  #echo $name $subfolder
-
-  mkdir ${MAIN_FOLDER}/run_${RUN_NO}/${option}_all_spill/$subfolder
-
-  FILES=$(cat ${HADD_NOW_DIRS} | grep run_${RUN_NO} | awk -v name="$name" -v sf="$subfolder" '{print $1"/"sf"/"name".root"}' | tr '\n' ' ')
-  echo $FILES
-  all_spill_dir="${MAIN_FOLDER}/run_${RUN_NO}/${option}_all_spill"
-  dest="${all_spill_dir}/$subfolder/$name.root"
-
-  if [ -e "$dest" ]; then
-    #echo "File exists"
-    hadd_cmd="hadd -a $dest $FILES"
-
-    root -l -b -q "fileCheck.C(\"$dest\", \"$name\")" | grep "FILE_OK"
-    if [ $? == 0 ]; then
-      echo "$dest contains histogram $name"
-    else
-      echo "$dest does not contain histogram $name or is zombie - removing $dest"
-      rm $dest
-      hadd_cmd="hadd -f $dest $FILES"
-    fi
-  else
-    #echo "File does not exist"
-    hadd_cmd="hadd -f $dest $FILES"
-  fi
-
-  echo -e $header"\n"$plot > ${all_spill_dir}//${name}.csv
-
-  echo "$hadd_cmd; python3 plot_hadded.py -po ${all_spill_dir}/ -pl ${all_spill_dir}/${name}.csv " > ${all_spill_dir}//${name}.sh
-
-  echo sending: $(cat ${all_spill_dir}/$name.sh)
-
-  bash "${all_spill_dir}/$name.sh" > "${all_spill_dir}/${subfolder}/${name}.log" 2>&1 &
-
-  # Control max concurrency:
-  while true; do
-    # Count running hadd processes of this user
-    running_jobs=$(pgrep -cf "hadd")
-
-    if [ "$running_jobs" -lt "$MAX_JOBS" ]; then
-      break
-    fi
-    sleep 2
-  done
-
-done
-
-diff ${HADD_NOW_DIRS} ${HADD_GLOB_BUFFER} > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-  rm ${HADD_GLOB_BUFFER}
-  rm ${HADD_NOW_DIRS}
-else
-  #echo "Files differ"
-  grep -Fvx -f ${HADD_NOW_DIRS} ${HADD_GLOB_BUFFER} | grep run_${RUN_NO} > ../temp
-  rm ${HADD_NOW_DIRS}
-  cat ../temp > ${HADD_GLOB_BUFFER}
+if [ $? -ne 0 ]; then
+         echo "${DEST} is corrupt or zombie, skipping"
+         rm -f "${DEST}"
 fi
 
-wait
+for CURRENT_FILE in ${FILES}; do
+
+      echo current Iteration: ${CURRENT_FILE}
+      time root -l -b -q "fileCheck.C(\"${CURRENT_FILE}\")" | grep "FILE_OK"
+
+          if [ $? -ne 0 ]; then
+               echo "${CURRENT_FILE} is corrupt or zombie, skipping"
+               time hadd -f "${DEST}" ${CURRENT_FILE}
+          else
+               if [ -e "${DEST}" ]; then
+
+                  echo "Appending to existing ${DEST}"
+                  time hadd -a "${DEST}" ${CURRENT_FILE}
+                else
+                  echo "Creating ${DEST}"
+                  time hadd -f "${DEST}" ${CURRENT_FILE}
+                fi
+          fi
+done
+
+PLOTLIST=$(find $(cat $HADD_NOW_DIRS) -maxdepth 1 -type f -name "*.csv" 2>/dev/null | head -n 1)
+
+cd ${WORKING_DIR}
+
+python3 -m ferrari_core.hadding.plot_hadded -po $ALL_SPILL_DIR/ -pl $PLOTLIST
+
+# Update bookkeeping files
+if diff "${HADD_NOW_DIRS}" "${HADD_GLOB_BUFFER}" > /dev/null 2>&1; then
+
+    rm -f "${HADD_GLOB_BUFFER}"
+    rm -f "${HADD_NOW_DIRS}"
+
+else
+
+    grep -Fvx -f "${HADD_NOW_DIRS}" "${HADD_GLOB_BUFFER}" \
+            | grep "run_${RUN_NO}" > /tmp/hadd_temp
+
+    rm -f "${HADD_NOW_DIRS}"
+        mv /tmp/hadd_temp "${HADD_GLOB_BUFFER}"
+
+fi
 
 end=$(date +%s%3N)
 elapsed=$((end - start))
 
-echo "Elapsed time: $elapsed ms"
-
-echo "----------------- hadd and plot-hadded done -----------------"
+echo "Elapsed time: ${elapsed} ms"
+echo "----------------- hadd done -----------------"

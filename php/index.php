@@ -79,7 +79,7 @@ if (($handle = fopen($csvFile, "r")) !== false) {
     fclose($handle);
 }
 
-$rootfile = "../histos.root";
+$rootfile = "../canvases.root";
 
 /* keep same defaults previously coming from JSON */
 $cardW = 400;

@@ -148,13 +148,14 @@ def main(arguments):
       php_files = ["index", "view"]
       for php_f in php_files:
         os.system(f"/bin/cp {BASE_DIR}/php/{php_f}.php {args.plot_output_folder}/{php_f}.php")
+      os.system(f"/bin/cp {plot_list_file} {args.plot_output_folder}")
 
-      f = ROOT.TFile(f"{args.plot_output_folder}/histos.root", "recreate")
+      f = {"canvases": ROOT.TFile(f"{args.plot_output_folder}/canvases.root", "recreate"), "histos": ROOT.TFile(f"{args.plot_output_folder}/histos.root", "recreate")}
 
       subfolders_list = []
       plotconf_df.apply(lambda row: plot_functions.plot(row, arrays, f"{args.plot_output_folder}/", subfolders_list, f, php_files=php_files), axis=1)
 
-      f.Close()
+      for key in f: f[key].Close()
       print(f"plotting took {-time_plot + time.time():.1f} s")
 
     # writing

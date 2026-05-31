@@ -2,10 +2,25 @@ import json
 import time, re, os, ROOT, sys
 import numpy as np
 import traceback
-import shutil
+import importlib
 import glob
 
 from .registry import get_routine
+
+plots_plugins = os.getenv("PLOTS_PLUGINS_FOLDER")
+
+if plots_plugins:
+    # Ensure path is valid and absolute
+    plots_plugins = os.path.abspath(plots_plugins)
+
+    if os.path.isdir(plots_plugins):
+        # Add folder to Python path so imports work
+        sys.path.insert(0, plots_plugins)
+
+        for filename in os.listdir(plots_plugins):
+            if filename.endswith(".py") and not filename.startswith("_"):
+                module_name = filename[:-3]  # strip ".py"
+                importlib.import_module(module_name)
 
 #not implemented!!
 def plot_chunk(args):
@@ -56,6 +71,7 @@ def plot(row, uproot_dict, outputfolder, subfolders_list, f=None, just_draw=Fals
       if php_files is not None:
         for php_f in php_files:
           os.system(f"/bin/cp {outputfolder}/{php_f}.php {outputfolder}/{row.folder}/{php_f}.php")
+          print(f"Done: /bin/cp {outputfolder}/{php_f}.php {outputfolder}/{row.folder}/{php_f}.php")
 
       subfolders_list.append(row.folder)
 
@@ -85,15 +101,6 @@ def plot(row, uproot_dict, outputfolder, subfolders_list, f=None, just_draw=Fals
     c.cd()
 
     if just_draw:
-      for key in f.GetListOfKeys():
-        obj = key.ReadObj()
-        try:
-          if obj.InheritsFrom("TCanvas"):
-            f.Delete(f"{key.GetName()};{key.GetCycle()}")
-        except TypeError:
-          pass
-
-    if just_draw:
       pass
     else:
       if str(row.cuts).strip() == "":
@@ -112,7 +119,7 @@ def plot(row, uproot_dict, outputfolder, subfolders_list, f=None, just_draw=Fals
 
     if str(row.y).strip() == "0" and str(row.z).strip() == "0":
         if just_draw:
-          h = f.Get(f"{name}")
+          h = f["histos"].Get(f"{name}")
         else:
           h = ROOT.TH1F(name, name, int(row.binsnx), float(row.binsminx), float(row.binsmaxx))
 
@@ -156,7 +163,7 @@ def plot(row, uproot_dict, outputfolder, subfolders_list, f=None, just_draw=Fals
 
     elif str(row.y).strip() != "0" and str(row.z).strip() == "0":
         if just_draw:
-          h = f.Get(f"{name}")
+          h = f["histos"].Get(f"{name}")
         else:
           #print("evaluating y: ")
           y = eval_formula(row.y, uproot_dict).ravel()
@@ -178,7 +185,7 @@ def plot(row, uproot_dict, outputfolder, subfolders_list, f=None, just_draw=Fals
     else:
         ROOT.gStyle.SetPalette(ROOT.kLightTemperature)
         if just_draw:
-          h = f.Get(f"{name}")
+          h = f["histos"].Get(f"{name}")
         else:
           #print("evaluating y: ")
           y_notflat = eval_formula(row.y, uproot_dict)
@@ -220,13 +227,13 @@ def plot(row, uproot_dict, outputfolder, subfolders_list, f=None, just_draw=Fals
       c.Update()
 
     t0 = time.time()
-    f.cd()
-    if just_draw: c.Write("", ROOT.TObject.kOverwrite)
-    else:
-      c.Write()
+    f["canvases"].cd()
+    c.Write()
+    if not just_draw:
       if row.normalize_with_entries != "":
         if int(row.normalize_with_entries) == 1:
           h.Scale(h.GetEntries())
+      f["histos"].cd()
       h.Write()
     #print(f"writing plots took: {time.time() - t0}s")
 
