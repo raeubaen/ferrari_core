@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+echo "DEBUG: Running .sh inside $SCRIPT_DIR"
+
 start=$(date +%s%3N)  # milliseconds
 
 option="beam"
@@ -38,7 +42,7 @@ DEST="${ALL_SPILL_DIR}/histos.root"
 echo "Input files:"
 echo "${FILES}"
 
-time root -l -b -q "fileCheck.C(\"${DEST}\")" | grep "FILE_OK"
+time root -l -b -q "${SCRIPT_DIR}/fileCheck.C(\"${DEST}\")" | grep "FILE_OK"
 
 if [ $? -ne 0 ]; then
          echo "${DEST} is corrupt or zombie, skipping"
@@ -48,7 +52,7 @@ fi
 for CURRENT_FILE in ${FILES}; do
 
       echo current Iteration: ${CURRENT_FILE}
-      time root -l -b -q "fileCheck.C(\"${CURRENT_FILE}\")" | grep "FILE_OK"
+      time root -l -b -q "${SCRIPT_DIR}/fileCheck.C(\"${CURRENT_FILE}\")" | grep "FILE_OK"
 
           if [ $? -ne 0 ]; then
                echo "${CURRENT_FILE} is corrupt or zombie, skipping"

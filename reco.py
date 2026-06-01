@@ -142,7 +142,7 @@ def main(arguments):
       plotconf_df = plotconf_df.fillna("")
 
       ROOT.gROOT.LoadMacro(f"{BASE_DIR}/root_logon.C")
-      os.system(f"mkdir -p {args.plot_output_folder}")
+      os.system(f"mkdir {args.plot_output_folder}")
       php_files = ["index", "view"]
       for php_f in php_files:
         os.system(f"/bin/cp {BASE_DIR}/php/{php_f}.php {args.plot_output_folder}/{php_f}.php")
