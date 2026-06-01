@@ -95,8 +95,6 @@ def main(arguments):
             elif isinstance(gen_reco_dict["ch_map"], list):
               active_ch_list = gen_reco_dict["ch_map"]
 
-            print(active_ch_list, tree[gen_reco_dict["waves_branch"]].array(library="np").shape)
-
             with tpe(max_workers=8) as decompr_exec, tpe(max_workers=8) as interpret_exec:
                 waves = tree[gen_reco_dict["waves_branch"]].array(library="np", decompression_executor=decompr_exec, interpretation_executor=interpret_exec)
 
