@@ -1,6 +1,6 @@
 RUN=$1
 
-source /afs/cern.ch/user/e/ecalgit/ferrari26/define_envs.sh
+source /afs/cern.ch/user/e/ecalgit/cms-ecal-h4-ferrari/define_envs.sh
 
 RECO_FOLDER="/eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Oct2025/reco/"
 LOGS_FOLDER="/eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Oct2025/re-reco/re-reco-logs/"
@@ -13,7 +13,6 @@ for spill_str in $(ls -1 "$RECO_FOLDER/run_$RUN/${RUN}_"*.root | awk -F "_" '{pr
     # Convert spill number safely (leading zeros → decimal)
     spill=$((10#$spill_str))
 
-    # Skip spills divisible by 3
     if (( spill % $SPILL_LASER == 0 )); then
         echo "Skipping spill $spill (divisible by $SPILL_LASER)"
         continue
