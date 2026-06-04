@@ -49,7 +49,7 @@ def main(arguments):
     if opt is not None:
         for detector in opt:
             for conf in opt[detector]["reco_conf"]:
-                detectors_dict[detector]["reco_conf"][conf] = opt[detector]["reco_conf"][conf]
+                detectors_dict[detector]["generic_reco"]["reco_conf"][conf] = opt[detector]["reco_conf"][conf]
     print(f"args + conf took {-time_start + time.time():.1f} s")
     plot_list_file = mode["plot_list"]
 
@@ -169,7 +169,9 @@ def main(arguments):
             branch_types[k] = np.dtype((v.dtype, v.shape[1:]))
 
     compression_map = {"zlib": uproot.compression.ZLIB(level=1), "lz4": uproot.compression.LZ4(level=1), "none": None}
-    with uproot.recreate(f"{args.reco_output_dir}/{args.run}_{args.spill}_reco.root", compression=compression_map[args.compression_type]) as f:
+    outfile_name = f"{args.reco_output_dir}/{args.run}_{args.spill}_reco.root"
+    print("Saving in: ", outfile_name)
+    with uproot.recreate(outfile_name, compression=compression_map[args.compression_type]) as f:
         tree = f.mktree("tree", branch_types)
         tree.extend(arrays)
     print(f"writing reco output took {-time_write + time.time():.1f} s")
