@@ -81,7 +81,6 @@ def pseudo_t(rise_valid, valid, thr_valid, sampling_rate, interpolation_factor, 
 
 
     pseudo_t = xp.zeros(valid.shape, dtype=xp.float32)
-    
 
     #print("timing shape") ##MC
     #print(f"pseudo_t.shape: {pseudo_t.shape}") ##MC
