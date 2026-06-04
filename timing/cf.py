@@ -43,6 +43,14 @@ def build_peak_interp(
         axis=1,
     )
 
+    #n_traces, n_samples = peak_segment.shape ##MC
+
+    ## Degenerate case: nothing to interpolate ##MC
+    #if n_samples == 0 or n_traces == 0: ##MC
+    #    # Option A: return an empty array with the expected shape ##MC
+    #    return xp.zeros((n_traces, 0), dtype=peak_segment.dtype) ##MC
+
+
     peak_interp = ndimage.zoom(
         peak_segment,
         [1, interpolation_factor],

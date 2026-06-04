@@ -11,6 +11,17 @@ else:
 
 def get_rise_interp(rise_valid, valid, thr_valid, interpolation_factor, argmax_idx, rise_interp_left_samples, rise_interp_right_samples, thr_tol=None):
 
+    #print(rise_valid.shape)
+    #print(thr_valid.shape)
+    #n_traces, n_samples = rise_valid.shape ##MC
+    #if n_traces == 0 or n_samples == 0: ##MC
+    #    # Decide what you want to return in this case:
+    #    #   - prelim_pseudo_t: empty
+    #    #   - rise_interp: empty
+    #    prelim_pseudo_t = xp.empty((0,), dtype=xp.int32) ##MC
+    #    rise_interp = xp.empty((0, 0), dtype=rise_valid.dtype) ##MC
+    #    return prelim_pseudo_t, rise_interp ##MC
+
     if thr_tol is not None:
       result = ( (xp.diff(rise_valid)>0)*rise_valid[:, :-1] > thr_valid[:, None] ) * (xp.abs(rise_valid - thr_valid[:, None]) < thr_tol)[:, :-1]
     else:
@@ -31,6 +42,7 @@ def get_rise_interp(rise_valid, valid, thr_valid, interpolation_factor, argmax_i
         idx.astype(xp.int32),
         axis=1
     )
+
 
     rise_interp = ndimage.zoom(
         rise_segment,
@@ -69,6 +81,17 @@ def pseudo_t(rise_valid, valid, thr_valid, sampling_rate, interpolation_factor, 
 
 
     pseudo_t = xp.zeros(valid.shape, dtype=xp.float32)
+    
+
+    #print("timing shape") ##MC
+    #print(f"pseudo_t.shape: {pseudo_t.shape}") ##MC
+    #print(f"pseudo_t_valid: {pseudo_t_valid.shape}") ##MC
+    #idx_valid = xp.asarray(idx_valid)                           ##MC
+
+    ## Degenerate case: nothing to assign                        ##MC
+    #if pseudo_t_valid.size == 0 or idx_valid.sum() == 0:        ##MC
+    #    # Nothing to write into pseudo_t for this batch         ##MC
+    #    return pseudo_t                                         ##MC
 
     pseudo_t[idx_valid] = pseudo_t_valid
 
