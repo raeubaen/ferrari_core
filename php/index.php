@@ -284,7 +284,7 @@ async function main() {
                     <!-- JSROOT full view -->
                     <a class="btn btn-sm btn-primary"
                        target="_blank"
-                       href="view.php?file=${encodeURIComponent(window.FILE)}&obj=${encodeURIComponent(fileName)}">
+                       href="view.php?obj=${encodeURIComponent(fileName)}">
                         JSROOT ↗
                     </a>
 

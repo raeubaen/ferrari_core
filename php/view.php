@@ -1,8 +1,7 @@
 <?php
-$file = $_GET["file"] ?? null;
 $obj  = $_GET["obj"] ?? null;
 
-if (!$file || !$obj || !file_exists($file)) {
+if (!$obj) {
     die("Invalid request");
 }
 ?>
@@ -17,7 +16,7 @@ if (!$file || !$obj || !file_exists($file)) {
 import { openFile, draw } from "https://root.cern/js/latest/modules/main.mjs";
 
 async function main() {
-    const file = await openFile("<?= htmlspecialchars($file) ?>");
+    const file = await openFile("../canvases.root");
     const obj  = await file.readObject("<?= htmlspecialchars($obj) ?>");
 
     await draw("canvas", obj, "hist;autozoom");

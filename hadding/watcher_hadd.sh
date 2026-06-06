@@ -13,4 +13,3 @@ while true; do
   cat ${HADD_GLOB_BUFFER}
   sleep 2
 done
-
