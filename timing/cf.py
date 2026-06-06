@@ -27,6 +27,7 @@ def build_peak_interp(
 
     n_wf, _ = rise_valid.shape
 
+
     offsets = xp.arange(
         -rise_interp_left_samples,
         rise_interp_right_samples + 1,
@@ -59,7 +60,6 @@ def build_peak_interp(
 
     peak_value = xp.max(peak_interp, axis=1)
 
-    print(peak_value.shape)
     return peak_value
 
 
@@ -67,8 +67,12 @@ def build_peak_interp(
 def cf(signal_window, valid, max_idx, values_max, **kwargs):
   globals().update(kwargs)
 
-  rise_valid = signal_window[valid, signal_samples_pre_peak - rise_samples_pre_peak:signal_samples_pre_peak + rise_samples_post_peak]
+  pseudo_t_array = xp.zeros(signal_window.shape[:2])
 
-  thresholds = build_peak_interp(rise_valid, rise_samples_pre_peak, rise_interp_left_samples, rise_interp_right_samples, interpolation_factor) * cf
+  if xp.sum(valid) > 0:
+    rise_valid = signal_window[valid, signal_samples_pre_peak - rise_samples_pre_peak:signal_samples_pre_peak + rise_samples_post_peak]
 
-  return {"time": pseudo_t(rise_valid, valid, thresholds, sampling_rate, interpolation_factor, max_idx, rise_interp_left_samples, rise_interp_right_samples, rise_samples_pre_peak)}
+    thresholds = build_peak_interp(rise_valid, rise_samples_pre_peak, rise_interp_left_samples, rise_interp_right_samples, interpolation_factor) * cf
+    pseudo_t_array = pseudo_t(rise_valid, valid, thresholds, sampling_rate, interpolation_factor, max_idx, rise_interp_left_samples, rise_interp_right_samples, rise_samples_pre_peak)
+
+  return {"time": pseudo_t_array}

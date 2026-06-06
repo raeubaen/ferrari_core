@@ -103,7 +103,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
       charge_seed = charge[:, seed_ch]
       charge_sum_central_region = xp.sum(charge[:, mask_central_region], axis=1)
       print("type: ", charge_sum_central_region.dtype)
-      charge_sum_central_region = xp.clip(charge_sum_central_region, seed_charge_threshold, None)
+      charge_sum_central_region = xp.clip(charge_sum_central_region, 1e-8, None)
       print("type: ", charge_sum_central_region.dtype)
       mask_low_charge_seed = charge_seed > seed_charge_threshold
 
