@@ -8,7 +8,7 @@ import os, json, uproot, argparse, sys, time, ROOT
 import pandas as pd
 import numpy as np
 
-import plot_functions_in_memory as plot_functions
+from .. import plot_functions_in_memory as plot_functions
 
 
 def main(arguments):
@@ -31,11 +31,10 @@ def main(arguments):
     for php_f in php_files:
       os.system(f"/bin/cp php/{php_f}.php {args.plot_output_folder}/{php_f}.php")
 
-    f = ROOT.TFile(f"{args.plot_output_folder}/histos.root", "recreate")
+    f = {"canvases": ROOT.TFile(f"{args.plot_output_folder}/canvases.root", "recreate"), "histos": ROOT.TFile(f"{args.plot_output_folder}/histos.root", "recreate")}
 
     subfolders_list = []
     plotconf_df.apply(lambda row: plot_functions.plot(row, arrays, f"{args.plot_output_folder}/", subfolders_list, f, php_files=php_files), axis=1)
-
 
 if __name__ == "__main__":
     main(sys.argv[1:])
