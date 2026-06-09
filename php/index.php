@@ -47,7 +47,27 @@ if (!file_exists($csvFile)) {
 
     echo "<div class='list-group'>";
 
-    foreach (glob("./*", GLOB_ONLYDIR) as $dir) {
+    $dirs = glob("./*", GLOB_ONLYDIR);
+
+    usort($dirs, function ($a, $b) {
+
+        $na = basename($a);
+        $nb = basename($b);
+
+        $isa = preg_match('/^run_(\d+)$/', $na, $ma);
+        $isb = preg_match('/^run_(\d+)$/', $nb, $mb);
+
+        if ($isa && $isb) {
+            return (int)$mb[1] <=> (int)$ma[1];
+        }
+
+        if ($isa) return -1;
+        if ($isb) return 1;
+
+        return strcasecmp($na, $nb);
+    });
+
+    foreach ($dirs as $dir) {
 
         $name = basename($dir);
 
@@ -56,7 +76,7 @@ if (!file_exists($csvFile)) {
              "'>" .
              htmlspecialchars($name) .
              "</a>";
-    }
+}
 
     echo "</div>";
 
