@@ -2,7 +2,7 @@ RUN=$1
 
 source /afs/cern.ch/user/e/ecalgit/cms-ecal-h4-ferrari/define_envs.sh
 
-RECO_FOLDER="/eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Oct2025/reco/"
+RECO_FOLDER="/eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Oct2025/reco_dqm/"
 LOGS_FOLDER="/eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Oct2025/re-reco/re-reco-logs/"
 DONE_FILE="/tmp/done_files.txt"
 
