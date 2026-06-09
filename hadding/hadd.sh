@@ -25,7 +25,9 @@ ALL_SPILL_DIR="${PLOT_MAIN_FOLDER}/run_${RUN_NO}/${option}_all_spill"
 
 FIRST_SPILL=$(grep "run_${RUN_NO}" "${HADD_NOW_DIRS}" | head -n 1)
 
-mkdir -p "${ALL_SPILL_DIR}"
+echo "mkdir -p ${ALL_SPILL_DIR}"
+
+mkdir "${ALL_SPILL_DIR}"
 
 echo "hadding (output in /dev/null - to debug open the code...)"
 
@@ -69,6 +71,7 @@ for CURRENT_FILE in ${FILES}; do
                   time hadd -a "${DEST}" ${CURRENT_FILE}
                 else
                   echo "Creating ${DEST}"
+                  echo "hadd -f "${DEST}" ${CURRENT_FILE}"
                   time hadd -f "${DEST}" ${CURRENT_FILE}
                 fi
           fi
