@@ -11,15 +11,17 @@ echo "LOGS in " ${LOGS_FOLDER}
 
 echo > $DONE_FILE
 
+SPILL_LASER=30000
+
 for spill_str in $(ls -1 "$RECO_FOLDER/run_$RUN/${RUN}_"*.root | awk -F "_" '{print $(NF-1)}'); do
 
     # Convert spill number safely (leading zeros → decimal)
     spill=$((10#$spill_str))
 
-    if (( spill % $SPILL_LASER == 0 )); then
-        echo "Skipping spill $spill (divisible by $SPILL_LASER)"
-        continue
-    fi
+    #if (( spill % $SPILL_LASER == 0 )); then
+    #    echo "Skipping spill $spill (divisible by $SPILL_LASER)"
+    #    continue
+    #fi
 
     echo $RECO_FOLDER/run_$RUN/${RUN}_$(printf "%04d" $((10#$spill)))_reco.root >> $DONE_FILE
 
