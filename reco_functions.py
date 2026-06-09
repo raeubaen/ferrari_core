@@ -70,6 +70,8 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   charge = xp.zeros_like(values_max)
   charge[~mask_under_thr] = xp.sum(signal_window[~mask_under_thr, :], axis=-1)
 
+  charge[~mask_under_thr] = xp.clip(charge[~mask_under_thr], 0, None)
+
   if charge_to_peak_conversion:
      charge = charge * charge_to_peak_slope
 
