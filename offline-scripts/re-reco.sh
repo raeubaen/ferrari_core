@@ -9,6 +9,8 @@ mkdir -p $LOGS_FOLDER
 
 echo "LOGS in " ${LOGS_FOLDER}
 
+echo > $DONE_FILE
+
 for spill_str in $(ls -1 "$RECO_FOLDER/run_$RUN/${RUN}_"*.root | awk -F "_" '{print $(NF-1)}'); do
 
     # Convert spill number safely (leading zeros → decimal)
@@ -19,7 +21,7 @@ for spill_str in $(ls -1 "$RECO_FOLDER/run_$RUN/${RUN}_"*.root | awk -F "_" '{pr
         continue
     fi
 
-    echo $RECO_FOLDER/run_$RUN/${RUN}_$(printf "%04d" $((10#$spill))).root > $DONE_FILE
+    echo $RECO_FOLDER/run_$RUN/${RUN}_$(printf "%04d" $((10#$spill)))_reco.root >> $DONE_FILE
 
     echo "Processing spill $spill"
 
