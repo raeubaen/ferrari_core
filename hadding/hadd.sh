@@ -43,12 +43,16 @@ echo "${FILES}"
 
 if [ -e "${DEST}" ]; then
 
+  echo "${DEST} exists, checking if corrupt"
   time root -l -b -q "${SCRIPT_DIR}/fileCheck.C(\"${DEST}\")" | grep "FILE_OK"
 
   if [ $? -ne 0 ]; then
            echo "${DEST} is corrupt or zombie, skipping"
+           echo "Removing hadded file..."
            rm -f "${DEST}"
   fi
+else
+  echo "${DEST} does not exist, will be created"
 fi
 
 for CURRENT_FILE in ${FILES}; do
@@ -58,10 +62,9 @@ for CURRENT_FILE in ${FILES}; do
 
           if [ $? -ne 0 ]; then
                echo "${CURRENT_FILE} is corrupt or zombie, skipping"
-               time hadd -f "${DEST}" ${CURRENT_FILE}
           else
                if [ -e "${DEST}" ]; then
-
+                  echo "${DEST} exists, appending!"
                   echo "Appending to existing ${DEST}"
                   time hadd -a "${DEST}" ${CURRENT_FILE}
                 else
