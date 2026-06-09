@@ -1,6 +1,10 @@
 HADD_NOW_DIRS="$PLOT_MAIN_FOLDER/to_hadd_now.txt"
 HADD_GLOB_BUFFER="$PLOT_MAIN_FOLDER/to_hadd_buffer.txt"
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+echo "DEBUG: Running .sh inside $SCRIPT_DIR"
+cd ${SCRIPT_DIR}
+
 while true; do
   if [ -e ${HADD_NOW_DIRS} ]; then
     echo $HADD_NOW_DIRS exists, starting
