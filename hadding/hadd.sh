@@ -31,7 +31,7 @@ mkdir -p "${ALL_SPILL_DIR}"
 echo "hadding (output in /dev/null - to debug open the code...)"
 
 # Copy helper php files if needed
-cp {PHP_FILES_DIR}/*.php "${ALL_SPILL_DIR}/"
+cp ${PHP_FILES_DIR}/*.php "${ALL_SPILL_DIR}/"
 
 FILES=$(grep "run_${RUN_NO}" "${HADD_NOW_DIRS}" \
     | awk '{print $1 "/histos.root"}' \
