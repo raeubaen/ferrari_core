@@ -1,12 +1,13 @@
 RUN=$1
 
-source /afs/cern.ch/user/e/ecalgit/cms-ecal-h4-ferrari/define_envs.sh
+RECO_FOLDER="${RECO_UNPACKED_OUTDIR}/reco_dqm/"
+LOGS_FOLDER="${RECO_UNPACKED_OUTDIR}/re-reco/re-reco-logs/"
 
-RECO_FOLDER="/eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Oct2025/reco_dqm/"
-LOGS_FOLDER="/eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Oct2025/re-reco/re-reco-logs/"
 DONE_FILE="/tmp/done_files.txt"
 
 mkdir -p $LOGS_FOLDER
+
+echo "LOGS in " ${LOGS_FOLDER}
 
 for spill_str in $(ls -1 "$RECO_FOLDER/run_$RUN/${RUN}_"*.root | awk -F "_" '{print $(NF-1)}'); do
 
@@ -27,10 +28,10 @@ for spill_str in $(ls -1 "$RECO_FOLDER/run_$RUN/${RUN}_"*.root | awk -F "_" '{pr
     cd $WORKING_DIR
 
     # Launch background job for this actual spill
-    bash -c "./process_run.sh $RUN $spill electrons noplots nounpack > $LOGS_FOLDER/log_${RUN}/log_${RUN}_${spill}.log 2>&1 &"
+    bash -c "./process_spill.sh $RUN $spill electrons noplots nounpack >  $LOGS_FOLDER/log_${RUN}/log_${RUN}_${spill}.log 2>&1 &"
 
     while true; do
-        running=$(ps aux | grep "bash -c ./process_run.sh" | grep -v grep | wc -l)
+        running=$(ps aux | grep "bash -c ./process_spill.sh" | grep -v grep | wc -l)
         if (( running < 12 )); then
             break
         fi
