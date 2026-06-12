@@ -7,19 +7,37 @@ if USE_CUDA:
 else:
     import numpy as xp
 
-def split(waveforms, threshold=None, pre=5, post=10, baseline_samples=10):
+def split(waveforms, threshold=None, pre=5, post=10, baseline_samples=10, signal_baseline_gap=5, peak_pos_from_highest_ch=False):
 
     # Assume waveforms is shape (E, C, S)
     E, C, S = waveforms.shape
 
-    if threshold is not None:
-      argmax_idx = xp.argmax(waveforms > threshold, axis=2)  # shape (E, C)
+    if peak_pos_from_highest_ch:
+      peak_val_per_ch = xp.max(waveforms, axis=2)      # (E, C)
+      best_ch = xp.argmax(peak_val_per_ch, axis=1)     # (E,)
+
+      if threshold is not None:
+          peak_pos_per_ch = xp.argmax(waveforms > threshold, axis=2)
+      else:
+          peak_pos_per_ch = xp.argmax(waveforms, axis=2)
+
+      argmax_ref = peak_pos_per_ch[xp.arange(E), best_ch]
+
+      argmax_idx = xp.broadcast_to(
+          argmax_ref[:, None],
+          (E, C)
+      )
+
+
     else:
-      argmax_idx = xp.argmax(waveforms, axis=2)  # shape (E, C)
+      if threshold is not None:
+        argmax_idx = xp.argmax(waveforms > threshold, axis=2)  # shape (E, C)
+      else:
+        argmax_idx = xp.argmax(waveforms, axis=2)  # shape (E, C)
 
     # Step 2: Build offsets
     window_offsets = xp.arange(-int(pre), int(post)).reshape(1, 1, -1)         # shape (1,1,pre+post)
-    baseline_offsets = xp.arange(-int(pre)-int(baseline_samples), -int(pre)).reshape(1, 1, -1)      # shape (1,1,bs_samples)
+    baseline_offsets = xp.arange(-int(pre)-int(baseline_samples)-int(signal_baseline_gap), -int(pre)-int(signal_baseline_gap)).reshape(1, 1, -1)      # shape (1,1,bs_samples)
 
     # Expand argmax index for broadcasting
     argmax_exp = argmax_idx[:, :, xp.newaxis]  # shape (E, C, None)

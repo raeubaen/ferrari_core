@@ -1,4 +1,6 @@
 default_generic_reco_conf = {
+    "peak_pos_from_highest_ch": False,
+    "signal_baseline_gap": 0,
     "baseline_samples": 10,
     "signal_samples_pre_peak": None,
     "signal_samples_post_peak": None,
