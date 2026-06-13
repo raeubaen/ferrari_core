@@ -1,14 +1,14 @@
 #!/bin/bash
 
+JUSTONEHADD=$1
+
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 echo "DEBUG: Running .sh inside $SCRIPT_DIR"
 
 start=$(date +%s%3N)  # milliseconds
 
 option="beam"
-
-HADD_NOW_DIRS="${PLOT_MAIN_FOLDER}/to_hadd_now.txt"
-HADD_GLOB_BUFFER="${PLOT_MAIN_FOLDER}/to_hadd_buffer.txt"
 
 if [ ! -f "${HADD_NOW_DIRS}" ]; then
     echo "no files to hadd in $HADD_NOW_DIRS"
@@ -57,27 +57,36 @@ else
   echo "${DEST} does not exist, will be created"
 fi
 
-for CURRENT_FILE in ${FILES}; do
-
-      echo current Iteration: ${CURRENT_FILE}
-      time root -l -b -q "${SCRIPT_DIR}/fileCheck.C(\"${CURRENT_FILE}\")" | grep "FILE_OK"
-
-          if [ $? -ne 0 ]; then
-               echo "${CURRENT_FILE} is corrupt or zombie, skipping"
-          else
-               if [ -e "${DEST}" ]; then
-                  echo "${DEST} exists, appending!"
-                  echo "Appending to existing ${DEST}"
-                  time hadd -a "${DEST}" ${CURRENT_FILE}
-                else
-                  echo "Creating ${DEST}"
-                  echo "hadd -f "${DEST}" ${CURRENT_FILE}"
-                  time hadd -f "${DEST}" ${CURRENT_FILE}
-                fi
-          fi
-done
 
 PLOTLIST=$(find $(cat $HADD_NOW_DIRS) -maxdepth 1 -type f -name "*.csv" 2>/dev/null | head -n 1)
+echo "Plotlist: "$PLOTLIST
+
+
+if [ JUSTONEHADD == "JUSTONEHADD" ]; then
+  hadd -f -k ${DEST} $FILES;
+
+else
+  for CURRENT_FILE in ${FILES}; do
+
+        echo current Iteration: ${CURRENT_FILE}
+        time root -l -b -q "${SCRIPT_DIR}/fileCheck.C(\"${CURRENT_FILE}\")" | grep "FILE_OK"
+
+            if [ $? -ne 0 ]; then
+                 echo "${CURRENT_FILE} is corrupt or zombie, skipping"
+            else
+                 if [ -e "${DEST}" ]; then
+                    echo "${DEST} exists, appending!"
+                    echo "Appending to existing ${DEST}"
+                    time hadd -a "${DEST}" ${CURRENT_FILE}
+                  else
+                    echo "Creating ${DEST}"
+                    echo "hadd -f "${DEST}" ${CURRENT_FILE}"
+                    time hadd -f "${DEST}" ${CURRENT_FILE}
+                  fi
+            fi
+  done
+fi
+
 
 cd ${WORKING_DIR}
 
