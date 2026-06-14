@@ -62,10 +62,12 @@ PLOTLIST=$(find $(cat $HADD_NOW_DIRS) -maxdepth 1 -type f -name "*.csv" 2>/dev/n
 echo "Plotlist: "$PLOTLIST
 
 
-if [ JUSTONEHADD == "JUSTONEHADD" ]; then
+if [ $JUSTONEHADD == "JUSTONEHADD" ]; then
+  echo "JUSTONEHADD TRUE"
   hadd -f -k ${DEST} $FILES;
 
 else
+  echo "JUSTONEHADD FALSE"
   for CURRENT_FILE in ${FILES}; do
 
         echo current Iteration: ${CURRENT_FILE}
@@ -79,7 +81,7 @@ else
                     echo "Appending to existing ${DEST}"
                     time hadd -a "${DEST}" ${CURRENT_FILE}
                   else
-                    echo "Creating ${DEST}"
+                    echo "Creating ${DEST} with force option"
                     echo "hadd -f "${DEST}" ${CURRENT_FILE}"
                     time hadd -f "${DEST}" ${CURRENT_FILE}
                   fi
