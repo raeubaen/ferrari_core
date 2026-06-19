@@ -27,12 +27,13 @@ default_generic_reco_conf = {
     "save_mean_rms_all_samples": False,
     "do_tau": False,
     "tau_descent_samples": None,
-    "charge_to_peak_conversion": False,
-    "charge_to_peak_slope": None,
+    "charge_unit_conversion": False,
+    "charge_unit_slope": None,
     "do_centroid": False,
     "w0_log_centroid": None,
     "coords_2d_list": [],
     "coord_z": None,
     "central_region_width": None,
-    "min_outer_over_seed_ratio": None
+    "min_outer_over_seed_ratio": None,
+    "post_process_routine": None
 }
