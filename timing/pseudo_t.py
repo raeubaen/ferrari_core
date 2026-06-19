@@ -43,11 +43,10 @@ def get_rise_interp(rise_valid, valid, thr_valid, interpolation_factor, argmax_i
         axis=1
     )
 
-
     rise_interp = ndimage.zoom(
         rise_segment,
         [1, interpolation_factor],
-        order=3,
+        order=3, prefilter=False
     )
 
     return prelim_pseudo_t, rise_interp  # remove dummy axis

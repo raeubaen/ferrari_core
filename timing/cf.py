@@ -55,7 +55,7 @@ def build_peak_interp(
     peak_interp = ndimage.zoom(
         peak_segment,
         [1, interpolation_factor],
-        order=5,
+        order=5, prefilter=False
     )
 
     peak_value = xp.max(peak_interp, axis=1)
