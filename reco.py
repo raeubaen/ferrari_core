@@ -1,5 +1,6 @@
 import os, json, uproot, argparse, sys, time, ROOT, copy
 import numpy as np
+import traceback
 
 import pandas as pd
 import importlib
@@ -13,6 +14,9 @@ from . import reco_utils
 
 from .registry import get_routine
 from .default_generic_reco_conf import default_generic_reco_conf
+
+import cProfile
+
 
 def main(arguments):
 
@@ -32,7 +36,7 @@ def main(arguments):
     parser.add_argument("-ct", f"--compression-type", type=str, required=False, help="mcp reco configuration", default="lz4")
     parser.add_argument("-po", f"--plot-output-folder", type=str, required=False, help="output folder for plots", default=None)
     parser.add_argument("-opt", f"--option", type=str, required=True, help="electrons/pions/laser")
-    parser.add_argument("-n", f"--n-cpus", type=int, required=False, help="#cpus to use (if going parallel)", default=2)
+    parser.add_argument("-n", f"--n-cpus", type=int, required=False, help="#cpus to use (if going parallel)", default=4)
     parser.add_argument("-dp",  f"--do-plots", type=int, required=False, help="do plots?", default=1)
 
     args = parser.parse_args(arguments)
@@ -68,56 +72,77 @@ def main(arguments):
     # reconstruction
     time_reco = time.time()
     reco_dict = {}
+
+    ready_waves = {}
+
     for detector in detectors_dict:
-        time_reco_det = time.time()
-        if detector not in mode["detector_list"]: continue
-        print(f"reco {detector} ongoing")
-        dd = detectors_dict[detector]
 
-        reco_dict[detector] = {}
+        try:
+          time_reco_det = time.time()
+          if detector not in mode["detector_list"]: continue
+          print(f"reco {detector} ongoing")
+          dd = detectors_dict[detector]
 
-        if dd["generic_reco"] is not None:
-            gen_reco_dict = dd["generic_reco"]
-            geo_dict, chid_dict, gain_list, intercalib_list, gain_is_high = None, None, None, None, False
+          reco_dict[detector] = {}
 
-            if gen_reco_dict["ch_map"] == None: active_ch_list = slice(None)
-            elif isinstance(gen_reco_dict["ch_map"], str):
-              map_df = pd.read_csv(gen_reco_dict["ch_map"], comment='#')
-              active_row_list = (map_df["type"] == detector).tolist()
-              active_ch_list = (map_df["branch_ch"][map_df["type"] == detector]).tolist()
-              chid_dict = {var: map_df[var].to_numpy()[active_row_list] for var in gen_reco_dict["chid_vars_list"]}
-              if gen_reco_dict["geo_needed"] is not None:
-                geo_dict = {coord: map_df[coord].to_numpy()[active_row_list] for coord in gen_reco_dict["geo_needed"]}
-              if gen_reco_dict["apply_gain_ratios"] is not None:
-                gain_list = map_df[gen_reco_dict["apply_gain_ratios"]].to_numpy()[active_row_list]
-              if gen_reco_dict["apply_intercalib"]:
-                intercalib_list = map_df[gen_reco_dict["apply_intercalib"]].to_numpy()[active_row_list]
-            elif isinstance(gen_reco_dict["ch_map"], list):
-              active_ch_list = gen_reco_dict["ch_map"]
+          if dd["generic_reco"] is not None:
+              gen_reco_dict = dd["generic_reco"]
+              geo_dict, chid_dict, gain_list, intercalib_list, gain_is_high = None, None, None, None, False
 
-            with tpe(max_workers=8) as decompr_exec, tpe(max_workers=8) as interpret_exec:
+              if gen_reco_dict["ch_map"] == None: active_ch_list = slice(None)
+              elif isinstance(gen_reco_dict["ch_map"], str):
+                map_df = pd.read_csv(gen_reco_dict["ch_map"], comment='#')
+                active_row_list = (map_df["type"] == detector).tolist()
+                active_ch_list = (map_df["branch_ch"][map_df["type"] == detector]).tolist()
+                chid_dict = {var: map_df[var].to_numpy()[active_row_list] for var in gen_reco_dict["chid_vars_list"]}
+                if gen_reco_dict["geo_needed"] is not None:
+                  geo_dict = {coord: map_df[coord].to_numpy()[active_row_list] for coord in gen_reco_dict["geo_needed"]}
+                if gen_reco_dict["apply_gain_ratios"] is not None:
+                  gain_list = map_df[gen_reco_dict["apply_gain_ratios"]].to_numpy()[active_row_list]
+                if gen_reco_dict["apply_intercalib"]:
+                  intercalib_list = map_df[gen_reco_dict["apply_intercalib"]].to_numpy()[active_row_list]
+              elif isinstance(gen_reco_dict["ch_map"], list):
+                active_ch_list = gen_reco_dict["ch_map"]
+
+              if gen_reco_dict["waves_branch"] not in ready_waves.keys():
+                time_readarrays = time.time()
+
+                decompr_exec = tpe(max_workers=6)
+                interpret_exec = tpe(max_workers=6)
+
                 waves = tree[gen_reco_dict["waves_branch"]].array(library="np", decompression_executor=decompr_exec, interpretation_executor=interpret_exec)
+                print(f"{detector} read into arrays took: {time.time() - time_readarrays}")
 
-            print(f"{detector} waves shape: {waves.shape}")
-            time_read = time.time()
-            if len(waves.shape) == 4: waves = waves.reshape(waves.shape[0], waves.shape[1]*waves.shape[2], waves.shape[3]) #(n_board, n_ch) format
-            waves = waves[:, active_ch_list, :]
+                print(f"{detector} waves shape: {waves.shape}")
+                time_reshape = time.time()
+                if len(waves.shape) == 4: waves = waves.reshape(waves.shape[0], waves.shape[1]*waves.shape[2], waves.shape[3]) #(n_board, n_ch) format
 
-            if gen_reco_dict["decode_and_select_gains"] is not None:
-                waves, gain_is_high = get_routine(gen_reco_dict["decode_and_select_gains"])(waves.astype(np.uint16))
-            if gen_reco_dict["remove_last_n_samples"] != 0: waves = waves[:, :, : -gen_reco_dict["remove_last_n_samples"]]
-            if gen_reco_dict["to_be_inverted"]: waves = 4096 - waves #must be inverted if the signal are with negative rising slope
+                ready_waves[gen_reco_dict["waves_branch"]] = waves
 
-            reco_conf = copy.deepcopy(default_generic_reco_conf)
-            reco_conf.update(gen_reco_dict["reco_conf"])
-            reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = reco_functions.generic_reco(
-              waves.astype(np.float32), detector, gain_is_high=gain_is_high, gain_list=gain_list, id=chid_dict, geo_dict=geo_dict, intercalib_list=intercalib_list, **reco_conf #n_cpus=args.n_cpus: not implemented
-            )
+              else:
+                waves = ready_waves[gen_reco_dict["waves_branch"]]
 
-        else:
-            reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = get_routine(dd["custom_reco"])(tree, detector, dd)
+              waves = waves[:, active_ch_list, :]
 
-        print(""f"{detector} reco took {-time_reco_det + time.time():.1f} s")
+              if gen_reco_dict["decode_and_select_gains"] is not None:
+                  waves, gain_is_high = get_routine(gen_reco_dict["decode_and_select_gains"])(waves.astype(np.uint16))
+              if gen_reco_dict["remove_last_n_samples"] != 0: waves = waves[:, :, : -gen_reco_dict["remove_last_n_samples"]]
+              if gen_reco_dict["to_be_inverted"]: waves = 4096 - waves #must be inverted if the signal are with negative rising slope
+
+              reco_conf = copy.deepcopy(default_generic_reco_conf)
+              reco_conf.update(gen_reco_dict["reco_conf"])
+              reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = reco_functions.generic_reco(
+                waves.astype(np.float16), detector, gain_is_high=gain_is_high, gain_list=gain_list, id=chid_dict, geo_dict=geo_dict, intercalib_list=intercalib_list, **reco_conf #n_cpus=args.n_cpus: not implemented
+              )
+
+              if reco_conf["post_process_routine"] is not None: reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = get_routine(reco_conf["post_process_routine"])(reco_dict[detector]["mask"], reco_dict[detector]["arrays"], **reco_conf)
+          else:
+              reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = get_routine(dd["custom_reco"])(tree, detector, dd)
+
+          print(""f"{detector} reco took {-time_reco_det + time.time():.1f} s")
+        except Exception:
+          print(traceback.format_exc())
+          reco_dict.pop(detector, None)
     print(f"reco took: {-time_reco + time.time():.1f} s")
 
     # time run controller
