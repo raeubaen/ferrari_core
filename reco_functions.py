@@ -34,7 +34,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
 
   t0 = time.time()
 
-  max_idx, baselines, baselines_std, baseline_integral, signal_window_3d_indices = reco_utils.split(waves, pre=signal_samples_pre_peak, post=signal_samples_post_peak, baseline_samples=baseline_samples,threshold=raw_threshold_before_peak_finding)
+  max_idx, baselines, baselines_std, baseline_integral, signal_window_3d_indices = reco_utils.split(waves, signal_baseline_gap=signal_baseline_gap, pre=signal_samples_pre_peak, post=signal_samples_post_peak, baseline_samples=baseline_samples, threshold=raw_threshold_before_peak_finding, peak_pos_from_highest_ch=peak_pos_from_highest_ch)
 
   print(f"baselines evaluation took: {time.time() - t0}")
   t0 = time.time()

@@ -1,6 +1,7 @@
 import ROOT
 import sys
 import os
+import csv
 
 USE_CUDA = os.getenv("USE_CUDA", "0") == "1"
 
@@ -151,6 +152,26 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
         dt += (-Ccorr / xp.clip(A_new, 1e-12, None))
         A = A_new
 
+    '''
+    t_shift = t[None, :] - dt[:, None]
+    P_fit = pulse.eval(t_shift)          # (EC, N)
+    model = A[:, None] * P_fit
+
+    with open("fit_debug.csv", "a", newline="") as f:
+        writer = csv.writer(f)
+
+        for ch in range(EC):
+            for i in range(N):
+                writer.writerow([
+                    ch,                  # channel/event
+                    i,                   # sample index
+                    A[ch],               # fitted amplitude
+                    dt[ch],              # fitted shift
+                    waveforms[ch,i], # data
+                    model[ch,i]      # fitted template
+                ])
+
+    '''
     return A, dt
 
 
