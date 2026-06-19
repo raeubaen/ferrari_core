@@ -52,6 +52,8 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
     print("subtracting bline")
     signal_window = signal_window - baselines[:, :, None]
 
+  signal_window = xp.nan_to_num(signal_window, nan=0.0)
+
   if gain_list is not None:
       gains = xp.asarray(gain_list[None, :, None])
       gain_is_high_window = xp.asarray(gain_is_high)[tuple(signal_window_3d_indices)]
@@ -66,14 +68,15 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
 
   signal_window[mask_under_thr, :] = 0
 
-
   charge = xp.zeros_like(values_max)
   charge[~mask_under_thr] = xp.sum(signal_window[~mask_under_thr, :], axis=-1)
 
   charge[~mask_under_thr] = xp.clip(charge[~mask_under_thr], 0, None)
 
-  if charge_to_peak_conversion:
-     charge = charge * charge_to_peak_slope
+  if charge_unit_conversion:
+     charge = charge * charge_unit_slope
+
+  charge = xp.nan_to_num(charge, nan=0.0)
 
   ich = xp.repeat(xp.arange(0, waves.shape[1])[xp.newaxis, :], charge.shape[0], axis=0)
 
@@ -85,7 +88,6 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   t0 = time.time()
 
   if geo_dict is not None:
-    print(coords_2d_list)
     ix, iy = (xp.asarray(geo_dict[key]) for key in coords_2d_list[:2])
     if coord_z is not None: iz = geo_dict[coord_z]
     else: iz = None
@@ -99,14 +101,12 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
       print(f"find central_region took: {time.time() - t0}")
       t0 = time.time()
 
-
       peak_seed = values_max[:, seed_ch]
 
       charge_seed = charge[:, seed_ch]
       charge_sum_central_region = xp.sum(charge[:, mask_central_region], axis=1)
-      print("type: ", charge_sum_central_region.dtype)
+
       charge_sum_central_region = xp.clip(charge_sum_central_region, 1e-8, None)
-      print("type: ", charge_sum_central_region.dtype)
       mask_low_charge_seed = charge_seed > seed_charge_threshold
 
       # amplitude_map of the central_region matrix
