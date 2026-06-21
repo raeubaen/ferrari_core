@@ -30,7 +30,7 @@ def main(arguments):
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("-i",  f"--input", type=str, required=True, help="input ROOT file with unpacked tree")
     parser.add_argument("-r",  f"--run", type=str, required=True, help="run number")
-    parser.add_argument("-s",  f"--spill", type=str, required=True, help="spill number")
+    parser.add_argument("-s",  f"--fragment", type=str, required=True, help="fragment number")
     parser.add_argument("-ro", f"--reco-output-dir", type=str, required=True, help="directory for reco output")
     parser.add_argument("-j", f"--detectors-conf-json", type=str, required=False, help="detectors reco configuration", default="confs/detectors_conf.json")
     parser.add_argument("-ct", f"--compression-type", type=str, required=False, help="mcp reco configuration", default="lz4")
@@ -44,7 +44,7 @@ def main(arguments):
     # read detectors configuration
     json_dict = json.load(open(args.detectors_conf_json, "r"))
     detectors_dict = json_dict["detectors"]
-    mode = json_dict["global"]["spill_type"][args.option]
+    mode = json_dict["global"]["fragment_type"][args.option]
 
     for p in json_dict["global"]["plugins"]:
       importlib.import_module(p)
@@ -194,7 +194,7 @@ def main(arguments):
             branch_types[k] = np.dtype((v.dtype, v.shape[1:]))
 
     compression_map = {"zlib": uproot.compression.ZLIB(level=1), "lz4": uproot.compression.LZ4(level=1), "none": None}
-    outfile_name = f"{args.reco_output_dir}/{args.run}_{args.spill}_reco.root"
+    outfile_name = f"{args.reco_output_dir}/{args.run}_{args.fragment}_reco.root"
     print("Saving in: ", outfile_name)
     with uproot.recreate(outfile_name, compression=compression_map[args.compression_type]) as f:
         tree = f.mktree("tree", branch_types)
@@ -202,7 +202,7 @@ def main(arguments):
     print(f"writing reco output took {-time_write + time.time():.1f} s")
 
     print(f"total reco.py took {-time_start + time.time():.1f} s")
-    print("----------------- unpacking, reco and plotting single spill done -----------------")
+    print("----------------- unpacking, reco and plotting single fragment done -----------------")
 
 if __name__ == '__main__':
     main(sys.argv[1:])

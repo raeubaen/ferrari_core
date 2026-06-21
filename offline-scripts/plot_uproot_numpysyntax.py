@@ -22,7 +22,7 @@ def main(arguments):
     args = parser.parse_args(arguments)
 
     json_dict = json.load(open(args.detectors_conf_json, "r"))
-    mode = json_dict["global"]["spill_type"][args.option]
+    mode = json_dict["global"]["fragment_type"][args.option]
 
     plot_list_file = mode["plot_list"]
 

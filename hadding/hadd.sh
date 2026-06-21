@@ -21,24 +21,24 @@ RUN_NO=$(tail -n 1 "${HADD_NOW_DIRS}" \
 
 echo "RUN_NO = ${RUN_NO}"
 
-ALL_SPILL_DIR="${PLOT_MAIN_FOLDER}/run_${RUN_NO}/${option}_all_spill"
+ALL_FRAGMENT_DIR="${PLOT_MAIN_FOLDER}/run_${RUN_NO}/${option}_all_fragment"
 
-FIRST_SPILL=$(grep "run_${RUN_NO}" "${HADD_NOW_DIRS}" | head -n 1)
+FIRST_FRAGMENT=$(grep "run_${RUN_NO}" "${HADD_NOW_DIRS}" | head -n 1)
 
-echo "mkdir -p ${ALL_SPILL_DIR}"
+echo "mkdir -p ${ALL_FRAGMENT_DIR}"
 
-mkdir "${ALL_SPILL_DIR}"
+mkdir "${ALL_FRAGMENT_DIR}"
 
 echo "hadding (output in /dev/null - to debug open the code...)"
 
 # Copy helper php files if needed
-cp ${PHP_FILES_DIR}/*.php "${ALL_SPILL_DIR}/"
+cp ${PHP_FILES_DIR}/*.php "${ALL_FRAGMENT_DIR}/"
 
 FILES=$(grep "run_${RUN_NO}" "${HADD_NOW_DIRS}" \
     | awk '{print $1 "/histos.root"}' \
         | tr '\n' ' ')
 
-DEST="${ALL_SPILL_DIR}/histos.root"
+DEST="${ALL_FRAGMENT_DIR}/histos.root"
 
 echo "Input files:"
 echo "${FILES}"
@@ -92,7 +92,7 @@ fi
 
 cd ${WORKING_DIR}
 
-python3 -m ferrari_core.hadding.plot_hadded -po $ALL_SPILL_DIR/ -pl $PLOTLIST
+python3 -m ferrari_core.hadding.plot_hadded -po $ALL_FRAGMENT_DIR/ -pl $PLOTLIST
 
 # Update bookkeeping files
 if diff "${HADD_NOW_DIRS}" "${HADD_GLOB_BUFFER}" > /dev/null 2>&1; then
