@@ -36,7 +36,7 @@ def main(arguments):
     parser.add_argument("-ct", f"--compression-type", type=str, required=False, help="mcp reco configuration", default="lz4")
     parser.add_argument("-po", f"--plot-output-folder", type=str, required=False, help="output folder for plots", default=None)
     parser.add_argument("-opt", f"--option", type=str, required=True, help="electrons/pions/laser")
-    parser.add_argument("-n", f"--n-cpus", type=int, required=False, help="#cpus to use (if going parallel)", default=4)
+    parser.add_argument("-n", f"--n-cpus", type=int, required=False, help="#cpus to use (if going parallel)", default=os.getenv("NCPU_PER_FRAGMENT"))
     parser.add_argument("-dp",  f"--do-plots", type=int, required=False, help="do plots?", default=1)
 
     args = parser.parse_args(arguments)
@@ -107,8 +107,8 @@ def main(arguments):
               if gen_reco_dict["waves_branch"] not in ready_waves.keys():
                 time_readarrays = time.time()
 
-                decompr_exec = tpe(max_workers=6)
-                interpret_exec = tpe(max_workers=6)
+                decompr_exec = tpe(max_workers=args.n_cpus)
+                interpret_exec = tpe(max_workers=1)
 
                 waves = tree[gen_reco_dict["waves_branch"]].array(library="np", decompression_executor=decompr_exec, interpretation_executor=interpret_exec)
                 print(f"{detector} read into arrays took: {time.time() - time_readarrays}")
@@ -135,7 +135,8 @@ def main(arguments):
                 waves.astype(np.float16), detector, gain_is_high=gain_is_high, gain_list=gain_list, id=chid_dict, geo_dict=geo_dict, intercalib_list=intercalib_list, **reco_conf #n_cpus=args.n_cpus: not implemented
               )
 
-              if reco_conf["post_process_routine"] is not None: reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = get_routine(reco_conf["post_process_routine"])(reco_dict[detector]["mask"], reco_dict[detector]["arrays"], **reco_conf)
+              if reco_conf["post_process_routine"] is not None:
+                reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = get_routine(reco_conf["post_process_routine"])(reco_dict[detector]["mask"], reco_dict[detector]["arrays"], **reco_conf)
           else:
               reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = get_routine(dd["custom_reco"])(tree, detector, dd)
 
@@ -176,6 +177,7 @@ def main(arguments):
       f = {"canvases": ROOT.TFile(f"{args.plot_output_folder}/canvases.root", "recreate"), "histos": ROOT.TFile(f"{args.plot_output_folder}/histos.root", "recreate")}
 
       subfolders_list = []
+
       plotconf_df.apply(lambda row: plot_functions.plot(row, arrays, f"{args.plot_output_folder}/", subfolders_list, f, php_files=php_files), axis=1)
 
       for key in f: f[key].Close()
