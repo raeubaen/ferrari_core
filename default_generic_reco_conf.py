@@ -35,5 +35,7 @@ default_generic_reco_conf = {
     "coord_z": None,
     "central_region_width": None,
     "min_outer_over_seed_ratio": None,
-    "post_process_routine": None
+    "post_process_routine": None,
+    "lp_freq": None,
+    "pre_process_routine": None
 }
