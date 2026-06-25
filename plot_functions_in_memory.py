@@ -133,9 +133,9 @@ def plot(row, uproot_dict, outputfolder, subfolders_list, f=None, just_draw=Fals
         h.SetFillColorAlpha(ROOT.kBlue, 0.2)
         h.SetLineColor(eval(f"ROOT.{row.color}"))
         binw = (float(row.binsmaxx) - float(row.binsminx)) / int(row.binsnx)
-        h.GetXaxis().SetRangeUser(h.GetMean() - 3*h.GetRMS(), h.GetMean() + 3*h.GetRMS()) #iterative...
-        h.GetXaxis().SetRangeUser(h.GetMean() - 3*h.GetRMS(), h.GetMean() + 3*h.GetRMS())
-        h.GetXaxis().SetRangeUser(h.GetMean() - 5*h.GetRMS(), h.GetMean() + 5*h.GetRMS())
+        #h.GetXaxis().SetRangeUser(h.GetMean() - 3*h.GetRMS(), h.GetMean() + 3*h.GetRMS()) #iterative...
+        #h.GetXaxis().SetRangeUser(h.GetMean() - 3*h.GetRMS(), h.GetMean() + 3*h.GetRMS())
+        #h.GetXaxis().SetRangeUser(h.GetMean() - 5*h.GetRMS(), h.GetMean() + 5*h.GetRMS())
         h.GetYaxis().SetTitle(f"entries / {float(f'{binw:.1g}'):g} {row.ylabel}")
 
         c.Update()
