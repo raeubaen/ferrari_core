@@ -41,6 +41,11 @@ def main(arguments):
 
     args = parser.parse_args(arguments)
 
+    float_accuracy_env = os.getenv("FLOAT_ACCURACY_WAVES_NUMPY")
+    if float_accuracy_env == "float16": float_accuracy = np.float16
+    elif float_accuracy_env == "float32": float_accuracy = np.float32
+
+
     # read detectors configuration
     json_dict = json.load(open(args.detectors_conf_json, "r"))
     detectors_dict = json_dict["detectors"]
@@ -131,8 +136,9 @@ def main(arguments):
 
               reco_conf = copy.deepcopy(default_generic_reco_conf)
               reco_conf.update(gen_reco_dict["reco_conf"])
+
               reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = reco_functions.generic_reco(
-                waves.astype(np.float16), detector, gain_is_high=gain_is_high, gain_list=gain_list, id=chid_dict, geo_dict=geo_dict, intercalib_list=intercalib_list, **reco_conf #n_cpus=args.n_cpus: not implemented
+                waves.astype(float_accuracy), detector, gain_is_high=gain_is_high, gain_list=gain_list, id=chid_dict, geo_dict=geo_dict, intercalib_list=intercalib_list, **reco_conf #n_cpus=args.n_cpus: not implemented
               )
 
               if reco_conf["post_process_routine"] is not None:
