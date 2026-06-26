@@ -7,27 +7,49 @@ if USE_CUDA:
 else:
     import numpy as xp
 
-def split(waveforms, threshold=None, pre=5, post=10, baseline_samples=10, signal_baseline_gap=5, peak_pos_from_highest_ch=False):
+
+def split(waveforms, threshold=None, pre=5, post=10, baseline_samples=10, signal_baseline_gap=5, peak_pos_from_highest_ch=False, peak_accept_window_ns_from_highest_ch=None, sampling_rate=None):
 
     # Assume waveforms is shape (E, C, S)
     E, C, S = waveforms.shape
 
-    if peak_pos_from_highest_ch:
+    if peak_pos_from_highest_ch or (peak_accept_window_ns_from_highest_ch is not None):
       peak_val_per_ch = xp.max(waveforms, axis=2)      # (E, C)
       best_ch = xp.argmax(peak_val_per_ch, axis=1)     # (E,)
 
+      best_waveforms = waveforms[xp.arange(E), best_ch]   # (E, S)
+
       if threshold is not None:
-          peak_pos_per_ch = xp.argmax(waveforms > threshold, axis=2)
+          argmax_ref = xp.argmax(best_waveforms > threshold, axis=1)
       else:
-          peak_pos_per_ch = xp.argmax(waveforms, axis=2)
+          argmax_ref = xp.argmax(best_waveforms, axis=1)
 
-      argmax_ref = peak_pos_per_ch[xp.arange(E), best_ch]
 
-      argmax_idx = xp.broadcast_to(
-          argmax_ref[:, None],
-          (E, C)
-      )
+      if peak_pos_from_highest_ch:
 
+        argmax_idx = xp.broadcast_to(
+            argmax_ref[:, None],
+            (E, C)
+        )
+
+
+      if peak_accept_window_ns_from_highest_ch is not None:
+
+        half_window = int(round(
+            peak_accept_window_ns_from_highest_ch * sampling_rate / 2
+        ))
+
+        samples = xp.arange(S)
+
+        window_mask = (
+            xp.abs(samples[None, None, :] - argmax_ref[:, None, None])
+            <= half_window
+        )
+
+        masked_waveforms = xp.where(window_mask, waveforms, -xp.inf)
+
+        # Replace the previous peak positions/values by the best within the window
+        argmax_idx = xp.argmax(masked_waveforms, axis=2)
 
     else:
       if threshold is not None:
