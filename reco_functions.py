@@ -37,7 +37,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   if pre_process_routine is not None:
     waves = get_routine(pre_process_routine)(waves, **kwargs)
 
-  max_idx, baselines, baselines_std, baseline_integral, signal_window_3d_indices = reco_utils.split(waves, signal_baseline_gap=signal_baseline_gap, pre=signal_samples_pre_peak, post=signal_samples_post_peak, baseline_samples=baseline_samples, threshold=raw_threshold_before_peak_finding, peak_pos_from_highest_ch=peak_pos_from_highest_ch)
+  max_idx, baselines, baselines_std, baseline_integral, signal_window_3d_indices = reco_utils.split(waves, signal_baseline_gap=signal_baseline_gap, pre=signal_samples_pre_peak, post=signal_samples_post_peak, baseline_samples=baseline_samples, threshold=raw_threshold_before_peak_finding, peak_pos_from_highest_ch=peak_pos_from_highest_ch, peak_accept_window_ns_from_highest_ch=peak_accept_window_ns_from_highest_ch, sampling_rate=sampling_rate)
 
   print(f"baselines evaluation took: {time.time() - t0}")
   t0 = time.time()
@@ -74,7 +74,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   charge = xp.zeros_like(values_max)
   charge[~mask_under_thr] = xp.sum(signal_window[~mask_under_thr, :], axis=-1)
 
-  charge[~mask_under_thr] = xp.clip(charge[~mask_under_thr], 0, None)
+  #charge[~mask_under_thr] = xp.clip(charge[~mask_under_thr], 0, None)
 
   if charge_unit_conversion:
      charge = charge * charge_unit_slope
