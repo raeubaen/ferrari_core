@@ -62,8 +62,9 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
       gain_is_high_window = xp.asarray(gain_is_high)[tuple(signal_window_3d_indices)]
       signal_window *= xp.where(gain_is_high_window, gains, 1)
 
-  if intercalib_list is not None:
-    signal_window *= xp.asarray(intercalib_list[None, :, None])
+  if intercalib_dict is not None:
+    for key in intercalib_dict:
+      signal_window *= xp.asarray(intercalib_dict[key][None, :, None])
 
   values_max = xp.max(signal_window, axis=2)
 

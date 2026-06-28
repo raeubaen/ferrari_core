@@ -105,7 +105,7 @@ def main(arguments):
                 if gen_reco_dict["apply_gain_ratios"] is not None:
                   gain_list = map_df[gen_reco_dict["apply_gain_ratios"]].to_numpy()[active_row_list]
                 if gen_reco_dict["apply_intercalib"]:
-                  intercalib_list = map_df[gen_reco_dict["apply_intercalib"]].to_numpy()[active_row_list]
+                  intercalib_dict = {key: map_df[key].to_numpy()[active_row_list] for key in gen_reco_dict["apply_intercalib"]}
               elif isinstance(gen_reco_dict["ch_map"], list):
                 active_ch_list = gen_reco_dict["ch_map"]
 
