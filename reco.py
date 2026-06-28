@@ -92,7 +92,7 @@ def main(arguments):
 
           if dd["generic_reco"] is not None:
               gen_reco_dict = dd["generic_reco"]
-              geo_dict, chid_dict, gain_list, intercalib_list, gain_is_high = None, None, None, None, False
+              geo_dict, chid_dict, gain_list, intercalib_dict, gain_is_high = None, None, None, None, False
 
               if gen_reco_dict["ch_map"] == None: active_ch_list = slice(None)
               elif isinstance(gen_reco_dict["ch_map"], str):
@@ -104,7 +104,8 @@ def main(arguments):
                   geo_dict = {coord: map_df[coord].to_numpy()[active_row_list] for coord in gen_reco_dict["geo_needed"]}
                 if gen_reco_dict["apply_gain_ratios"] is not None:
                   gain_list = map_df[gen_reco_dict["apply_gain_ratios"]].to_numpy()[active_row_list]
-                if gen_reco_dict["apply_intercalib"]:
+                if gen_reco_dict["apply_intercalib"] is not None:
+                  print(gen_reco_dict["apply_intercalib"])
                   intercalib_dict = {key: map_df[key].to_numpy()[active_row_list] for key in gen_reco_dict["apply_intercalib"]}
               elif isinstance(gen_reco_dict["ch_map"], list):
                 active_ch_list = gen_reco_dict["ch_map"]
@@ -138,7 +139,7 @@ def main(arguments):
               reco_conf.update(gen_reco_dict["reco_conf"])
 
               reco_dict[detector]["mask"], reco_dict[detector]["arrays"] = reco_functions.generic_reco(
-                waves.astype(float_accuracy), detector, gain_is_high=gain_is_high, gain_list=gain_list, id=chid_dict, geo_dict=geo_dict, intercalib_list=intercalib_list, **reco_conf #n_cpus=args.n_cpus: not implemented
+                waves.astype(float_accuracy), detector, gain_is_high=gain_is_high, gain_list=gain_list, id=chid_dict, geo_dict=geo_dict, intercalib_dict=intercalib_dict, **reco_conf #n_cpus=args.n_cpus: not implemented
               )
 
               if reco_conf["post_process_routine"] is not None:
