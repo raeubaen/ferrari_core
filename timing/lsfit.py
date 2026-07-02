@@ -200,7 +200,7 @@ def lsfit(signal_window, valid, max_idx, values_max, **kwargs):
         signal_window_valid,
         pulse,
         t_grid,
-        signal_samples_pre_peak,  # data peak (scalar)
+        signal_samples_pre_peak/sampling_rate,  # data peak (scalar)
         t_pulse_peak     # model peak (scalar)
     )
 
