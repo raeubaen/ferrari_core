@@ -161,10 +161,11 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
     P_fit, _ = pulse.eval_and_derivative(t_shift)          # (EC, N)
     model = A[:, None] * P_fit
 
+    '''
     with open("fit_debug.csv", "a", newline="") as f:
         writer = csv.writer(f)
 
-        for ch in range(EC):
+        for ch in range(250):
             for i in range(N):
                 writer.writerow([
                     ch,                  # channel/event
@@ -174,6 +175,7 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
                     waveforms[ch,i], # data
                     model[ch,i]      # fitted template
                 ])
+    '''
 
     return A, dt
 
