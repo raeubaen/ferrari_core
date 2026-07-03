@@ -59,49 +59,46 @@ class PiecewiseCubicSplineNP:
 
     def _select(self, x):
 
-        x = xp.asarray(x)[None, ...]  # (1, E, C, N)
 
-        x0 = self.x0[:, None, None]
-        x1 = self.x1[:, None, None]
+        x = xp.asarray(x)  # (EC, N)
 
-        inside = (x >= x0) & (x <= x1)
+        # broadcast-free search of interval index
+        idx = xp.searchsorted(self.x1, x)
 
-        idx = xp.argmax(inside, axis=0)  # (E, C, N)
+        idx = xp.clip(idx, 0, self.x0.shape[0] - 1)
+
+        # safety correction (handles edge cases)
+        idx_left = xp.maximum(idx - 1, 0)
+
+        use_left = x < self.x0[idx]
+
+        idx = xp.where(use_left, idx_left, idx)
 
         xc = self.xc[idx]
-        dx = x[0] - xc
+
+        dx = x - xc
+
         mask = xp.abs(dx) <= (self.Ts / 2.0)
 
         return idx, dx, mask
 
 
-    def eval(self, x):
+    def eval_and_derivative(self, x):
 
         idx, dx, mask = self._select(x)
 
+        d = self.d[idx]
+        c = self.c[idx]
+        b = self.b[idx]
         a = self.a[idx]
-        b = self.b[idx]
-        c = self.c[idx]
-        d = self.d[idx]
 
-        f = a + b*dx + c*dx*dx + d*dx*dx*dx
+        P = ((d * dx + c) * dx + b) * dx + a
+        dP = b + dx * (2*c + 3*d*dx)
 
-        return xp.where(mask, f, 0.0)
+        P = xp.where(mask, P, 0.0)
+        dP = xp.where(mask, dP, 0.0)
 
-
-
-    def derivative(self, x):
-
-        idx, dx, mask = self._select(x)
-
-        b = self.b[idx]
-        c = self.c[idx]
-        d = self.d[idx]
-
-        deriv = b + 2*c*dx + 3*d*dx*dx
-
-        return xp.where(mask, deriv, 0.0)
-
+        return P, dP
 
 
 def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_iter=4):
@@ -119,29 +116,37 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
         # build shifted time grid
         # -------------------------
         # (EC, N)
-        t_shift = t[None, :] - dt[:, None]
+        t_shift = xp.empty((EC, N), dtype=t.dtype)
+        xp.subtract(t[None, :], dt[:, None], out=t_shift)
 
         # -------------------------
         # evaluate pulse
         # -------------------------
-        P  = pulse.eval(t_shift)        # (EC, N)
-        dP = pulse.derivative(t_shift) # (EC, N)
+        P, dP  = pulse.eval_and_derivative(t_shift)        # (EC, N)
+
         # -------------------------
         # projections (sum over samples)
         # -------------------------
-        Ap = xp.sum(waveforms * P, axis=1)   # (EC)
-        Ad = xp.sum(waveforms * dP, axis=1)
+        tmp = xp.empty_like(P)
 
+        xp.multiply(waveforms, P, out=tmp)
+        Ap = xp.sum(tmp, axis=1)
 
-        PP   = xp.sum(P * P, axis=1)
-        PdP  = xp.sum(P * dP, axis=1)
-        dPdP = xp.sum(dP * dP, axis=1)
+        xp.multiply(waveforms, dP, out=tmp)
+        Ad = xp.sum(tmp, axis=1)
 
+        xp.multiply(P, P, out=tmp)
+        PP = xp.sum(tmp, axis=1)
+
+        xp.multiply(P, dP, out=tmp)
+        PdP = xp.sum(tmp, axis=1)
+
+        xp.multiply(dP, dP, out=tmp)
+        dPdP = xp.sum(tmp, axis=1)
         # -------------------------
         # solve 2x2 system
         # -------------------------
-        denom = PP * dPdP - PdP * PdP
-        denom = xp.clip(denom, 1e-12, None)
+        denom = xp.clip(PP * dPdP - PdP * PdP, 1e-12, None)
 
         A_new = (Ap * dPdP - Ad * PdP) / denom
         Ccorr = (Ad * PP - Ap * PdP) / denom
@@ -152,9 +157,8 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
         dt += (-Ccorr / xp.clip(A_new, 1e-12, None))
         A = A_new
 
-    '''
     t_shift = t[None, :] - dt[:, None]
-    P_fit = pulse.eval(t_shift)          # (EC, N)
+    P_fit, _ = pulse.eval_and_derivative(t_shift)          # (EC, N)
     model = A[:, None] * P_fit
 
     with open("fit_debug.csv", "a", newline="") as f:
@@ -171,7 +175,6 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
                     model[ch,i]      # fitted template
                 ])
 
-    '''
     return A, dt
 
 
@@ -192,7 +195,7 @@ def lsfit(signal_window, valid, max_idx, values_max, **kwargs):
 
     t_grid = xp.arange(signal_window_valid.shape[1]) * Ts
 
-    pulse_values = pulse.eval(t_grid)
+    pulse_values, _ = pulse.eval_and_derivative(t_grid)
     t_pulse_peak = t_grid[xp.argmax(pulse_values)]
 
 
@@ -204,7 +207,7 @@ def lsfit(signal_window, valid, max_idx, values_max, **kwargs):
         t_pulse_peak     # model peak (scalar)
     )
 
-    fit_time_valid = dt_valid + xp.ones(dt_valid.shape)*signal_samples_pre_peak*Ts + max_idx_valid*Ts
+    fit_time_valid = dt_valid + signal_samples_pre_peak*Ts + max_idx_valid*Ts
 
     fit_t = xp.zeros(valid.shape, dtype=xp.float32)
 
