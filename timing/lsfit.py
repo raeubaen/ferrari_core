@@ -1,3 +1,4 @@
+
 import ROOT
 import sys
 import os
@@ -82,35 +83,36 @@ class PiecewiseCubicSplineNP:
 
         return idx, dx, mask
 
-
     def eval_and_derivative(self, x):
 
         idx, dx, mask = self._select(x)
 
-        d = self.d[idx]
-        c = self.c[idx]
-        b = self.b[idx]
-        a = self.a[idx]
-
-        P = ((d * dx + c) * dx + b) * dx + a
-        dP = b + dx * (2*c + 3*d*dx)
-
-        P = xp.where(mask, P, 0.0)
-        dP = xp.where(mask, dP, 0.0)
+        P = xp.where(mask, ((self.d[idx] * dx + self.c[idx]) * dx + self.b[idx]) * dx + self.a[idx], 0.0)
+        dP = xp.where(mask, self.b[idx] + dx * (2*self.c[idx] + 3*self.d[idx]*dx), 0.0)
 
         return P, dP
 
 
 def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_iter=4):
 
+    if USE_CUDA: mempool = xp.get_default_memory_pool()
+
+    if USE_CUDA: print("start iterative:, ", int(mempool.used_bytes()/(1024**2)), "MB")
+
     EC, N = waveforms.shape
+
+    print("EC,N in lsfit: ", EC, N)
 
     # initial alignment from DATA only
     dt = xp.full((EC), t_data_peak - t_template_peak)   # (EC)
     A  = xp.ones((EC))
 
 
+    if USE_CUDA: print("before for:, ", int(mempool.used_bytes()/(1024**2)), "MB")
+
     for _ in range(n_iter):
+
+        print("iter: ", _)
 
         # -------------------------
         # build shifted time grid
@@ -118,6 +120,8 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
         # (EC, N)
         t_shift = xp.empty((EC, N), dtype=t.dtype)
         xp.subtract(t[None, :], dt[:, None], out=t_shift)
+
+        if USE_CUDA: print("after time alignment, before eval: ", int(mempool.used_bytes()/(1024**2)), "MB")
 
         # -------------------------
         # evaluate pulse
@@ -157,11 +161,11 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
         dt += (-Ccorr / xp.clip(A_new, 1e-12, None))
         A = A_new
 
+    '''
     t_shift = t[None, :] - dt[:, None]
     P_fit, _ = pulse.eval_and_derivative(t_shift)          # (EC, N)
     model = A[:, None] * P_fit
 
-    '''
     with open("fit_debug.csv", "a", newline="") as f:
         writer = csv.writer(f)
 
@@ -183,23 +187,38 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
 @register_routine("lsfit")
 def lsfit(signal_window, valid, max_idx, values_max, **kwargs):
 
+    if USE_CUDA: mempool = xp.get_default_memory_pool()
+
+    if USE_CUDA: print("lsfit start:, ", int(mempool.used_bytes()/(1024**2)), "MB")
+
     globals().update(kwargs)
     Ts = 1/sampling_rate
 
     idx_valid = xp.where(valid)
 
+    if USE_CUDA: print("after idx valid: ", int(mempool.used_bytes()/(1024**2)), "MB")
+
     signal_window_valid = signal_window[idx_valid]
 
+    if USE_CUDA: print("after signal window extraction: ", int(mempool.used_bytes()/(1024**2)), "MB")
+
     max_idx_valid = max_idx[idx_valid]
+
+    if USE_CUDA: print("after max idx valid: ", int(mempool.used_bytes()/(1024**2)), "MB")
 
     segs = load_segments_txt(spline_file)
     pulse = PiecewiseCubicSplineNP(segs, Ts)
 
     t_grid = xp.arange(signal_window_valid.shape[1]) * Ts
 
+    if USE_CUDA: print("before eval: ", int(mempool.used_bytes()/(1024**2)), "MB")
     pulse_values, _ = pulse.eval_and_derivative(t_grid)
+    if USE_CUDA: print("after eval: ", int(mempool.used_bytes()/(1024**2)), "MB")
+
     t_pulse_peak = t_grid[xp.argmax(pulse_values)]
 
+
+    if USE_CUDA: print("lsfit before iterative, after grid:, ", int(mempool.used_bytes()/(1024**2)), "MB")
 
     amp_valid, dt_valid = fit_pulse_iterative(
         signal_window_valid,
