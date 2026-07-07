@@ -112,7 +112,7 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
 
     for _ in range(n_iter):
 
-        print("iter: ", _)
+        #print("iter: ", _)
 
         # -------------------------
         # build shifted time grid
@@ -121,6 +121,7 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
         t_shift = xp.empty((EC, N), dtype=t.dtype)
         xp.subtract(t[None, :], dt[:, None], out=t_shift)
 
+        #print("time: ", t_shift[0][0])
         if USE_CUDA: print("after time alignment, before eval: ", int(mempool.used_bytes()/(1024**2)), "MB")
 
         # -------------------------
@@ -150,6 +151,8 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
         # -------------------------
         # solve 2x2 system
         # -------------------------
+
+        #print("denom[0] preclip", (PP * dPdP - PdP * PdP)[0])
         denom = xp.clip(PP * dPdP - PdP * PdP, 1e-12, None)
 
         A_new = (Ap * dPdP - Ad * PdP) / denom
@@ -158,8 +161,10 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
         # -------------------------
         # update
         # -------------------------
-        dt += (-Ccorr / xp.clip(A_new, 1e-12, None))
+        dt += xp.clip(xp.nan_to_num(-Ccorr / A_new, nan=0.0), -5, 5) ## NOT TO BE HARDCODED; SAVE MEEEEEEEEE!
         A = A_new
+
+        print("denom[0], A_new[0], Ccorr[0]: ", denom[0], A_new[0], Ccorr[0])
 
     '''
     t_shift = t[None, :] - dt[:, None]
