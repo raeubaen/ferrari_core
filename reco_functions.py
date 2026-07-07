@@ -1,3 +1,4 @@
+
 import time
 import os
 import numpy as np
@@ -37,7 +38,11 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   if pre_process_routine is not None:
     waves = get_routine(pre_process_routine)(waves, **kwargs)
 
+  print("after pre-processing, using in GPU:, ", int(mempool.used_bytes()/(1024**2)), "MB")
+
   max_idx, baselines, baselines_std, baseline_integral, signal_window_3d_indices = reco_utils.split(waves, signal_baseline_gap=signal_baseline_gap, pre=signal_samples_pre_peak, post=signal_samples_post_peak, baseline_samples=baseline_samples, threshold=raw_threshold_before_peak_finding, peak_pos_from_highest_ch=peak_pos_from_highest_ch, peak_accept_window_ns_from_highest_ch=peak_accept_window_ns_from_highest_ch, sampling_rate=sampling_rate)
+
+  baseline_beginning = waves[:, :, :baseline_beginning_n_samples].mean(axis=2)
 
   print(f"baselines evaluation took: {time.time() - t0}")
   t0 = time.time()
@@ -50,6 +55,10 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   values_std = xp.std(waves, axis=2)   # std of all values
 
   signal_window = waves[tuple(signal_window_3d_indices)]
+
+  del waves, signal_window_3d_indices
+
+  if USE_CUDA: print("after wave processing, using in GPU:, ", int(mempool.used_bytes()/(1024**2)), "MB")
 
   if baseline_subtract:
     print("subtracting bline")
@@ -82,7 +91,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
 
   charge = xp.nan_to_num(charge, nan=0.0)
 
-  ich = xp.repeat(xp.arange(0, waves.shape[1])[xp.newaxis, :], charge.shape[0], axis=0)
+  ich = xp.repeat(xp.arange(0, charge.shape[1])[xp.newaxis, :], charge.shape[0], axis=0)
 
   return_dict = {}
   mask_selected_events = xp.ones((charge.shape[0],), dtype=bool)
@@ -186,6 +195,8 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
       tau[:, tau_mask] = -1.0 / (1e-12 + xp.median(log_slopes, axis=2) * sampling_rate)
       return_dict.update({f"{det}_tau": tau})
 
+  if USE_CUDA: print("before timing, using in GPU:, ", int(mempool.used_bytes()/(1024**2)), "MB")
+
   if do_timing:
     if do_central_region: timing_mask = mask_central_region
     else: timing_mask = xp.full((signal_window.shape[1],), True)
@@ -202,7 +213,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
 
   per_ch_info = {
     f"{det}_peak_pos": max_idx, f"{det}_peak_time": max_idx/sampling_rate,
-    f"{det}_charge": charge, f"{det}_peak": values_max, f"{det}_baseline_mean": baselines,
+    f"{det}_charge": charge, f"{det}_peak": values_max, f"{det}_baseline_mean": baselines, f"{det}_baseline_beginning": baseline_beginning,
     f"{det}_baseline_std": baselines_std, f"{det}_baseline_integral": baseline_integral/baseline_samples*signal_window.shape[2],
   }
 
@@ -213,7 +224,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
     if iz is not None: per_ch_info.update({f"{det}_{coord_z}": iz})
   if id is not None:
     for var in id:
-      per_ch_info.update({f"{det}_{var}": xp.repeat(id[var][xp.newaxis, :], waves.shape[0], axis=0)})
+      per_ch_info.update({f"{det}_{var}": xp.repeat(id[var][xp.newaxis, :], charge.shape[0], axis=0)})
 
   if do_central_region and save_only_central_region_info:
     for key in per_ch_info:
