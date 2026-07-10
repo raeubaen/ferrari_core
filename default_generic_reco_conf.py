@@ -1,4 +1,5 @@
 default_generic_reco_conf = {
+    "save_pre_processed_waves": True,
     "peak_pos_from_highest_ch": False,
     "peak_accept_window_ns_from_highest_ch": None,
     "signal_baseline_gap": 0,

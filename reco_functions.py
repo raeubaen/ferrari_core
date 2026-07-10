@@ -38,7 +38,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   if pre_process_routine is not None:
     waves = get_routine(pre_process_routine)(waves, **kwargs)
 
-  print("after pre-processing, using in GPU:, ", int(mempool.used_bytes()/(1024**2)), "MB")
+  if USE_CUDA:  print("after pre-processing, using in GPU:, ", int(mempool.used_bytes()/(1024**2)), "MB")
 
   max_idx, baselines, baselines_std, baseline_integral, signal_window_3d_indices = reco_utils.split(waves, signal_baseline_gap=signal_baseline_gap, pre=signal_samples_pre_peak, post=signal_samples_post_peak, baseline_samples=baseline_samples, threshold=raw_threshold_before_peak_finding, peak_pos_from_highest_ch=peak_pos_from_highest_ch, peak_accept_window_ns_from_highest_ch=peak_accept_window_ns_from_highest_ch, sampling_rate=sampling_rate)
 
@@ -216,6 +216,10 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
     f"{det}_charge": charge, f"{det}_peak": values_max, f"{det}_baseline_mean": baselines, f"{det}_baseline_beginning": baseline_beginning,
     f"{det}_baseline_std": baselines_std, f"{det}_baseline_integral": baseline_integral/baseline_samples*signal_window.shape[2],
   }
+
+  if save_pre_processed_waves:
+    per_ch_info.update({f"{det}_pre_processed_waves": signal_window})
+
 
   if save_mean_rms_all_samples:
     per_ch_info.update({f"{det}_samples_mean": values_mean, f"{det}_samples_std": values_std})
