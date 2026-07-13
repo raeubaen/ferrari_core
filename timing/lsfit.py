@@ -171,6 +171,7 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
     P_fit, _ = pulse.eval_and_derivative(t_shift)          # (EC, N)
     model = A[:, None] * P_fit
 
+    '''
     with open("fit_debug.csv", "a", newline="") as f:
         writer = csv.writer(f)
 
@@ -185,7 +186,13 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
                     model[ch,i]      # fitted template
                 ])
     '''
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     return A, dt
 
 
