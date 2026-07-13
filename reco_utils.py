@@ -8,7 +8,9 @@ else:
     import numpy as xp
 
 
-def split(waveforms, threshold=None, pre=5, post=10, baseline_samples=10, signal_baseline_gap=5, peak_pos_from_highest_ch=False, peak_accept_window_ns_from_highest_ch=None, sampling_rate=None):
+def split(waveforms, **kwargs):
+
+    globals().update(kwargs)
 
     # Assume waveforms is shape (E, C, S)
     E, C, S = waveforms.shape
@@ -51,6 +53,8 @@ def split(waveforms, threshold=None, pre=5, post=10, baseline_samples=10, signal
         # Replace the previous peak positions/values by the best within the window
         argmax_idx = xp.argmax(masked_waveforms, axis=2)
 
+    elif fixed_peak_position_value is not None:
+      argmax_idx = xp.full((E, C), fixed_peak_position_value)
     else:
       if threshold is not None:
         argmax_idx = xp.argmax(waveforms > threshold, axis=2)  # shape (E, C)

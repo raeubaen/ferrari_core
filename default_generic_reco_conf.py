@@ -1,4 +1,5 @@
 default_generic_reco_conf = {
+    "fixed_peak_position_value": None,
     "save_pre_processed_waves": True,
     "peak_pos_from_highest_ch": False,
     "peak_accept_window_ns_from_highest_ch": None,

@@ -40,7 +40,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
 
   if USE_CUDA:  print("after pre-processing, using in GPU:, ", int(mempool.used_bytes()/(1024**2)), "MB")
 
-  max_idx, baselines, baselines_std, baseline_integral, signal_window_3d_indices = reco_utils.split(waves, signal_baseline_gap=signal_baseline_gap, pre=signal_samples_pre_peak, post=signal_samples_post_peak, baseline_samples=baseline_samples, threshold=raw_threshold_before_peak_finding, peak_pos_from_highest_ch=peak_pos_from_highest_ch, peak_accept_window_ns_from_highest_ch=peak_accept_window_ns_from_highest_ch, sampling_rate=sampling_rate)
+  max_idx, baselines, baselines_std, baseline_integral, signal_window_3d_indices = reco_utils.split(waves, **kwargs)
 
   baseline_beginning = waves[:, :, :baseline_beginning_n_samples].mean(axis=2)
 
