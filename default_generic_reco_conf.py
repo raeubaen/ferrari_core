@@ -8,7 +8,7 @@ default_generic_reco_conf = {
     "signal_samples_pre_peak": None,
     "signal_samples_post_peak": None,
     "charge_zerosup_peak_threshold": None,
-    "seed_charge_threshold": 0,
+    "seed_charge_threshold": None,
     "do_central_region": False,
     "fixed_central_region": None,
     "do_timing": False,

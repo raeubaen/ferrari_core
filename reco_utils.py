@@ -12,6 +12,8 @@ def split(waveforms, **kwargs):
 
     globals().update(kwargs)
 
+    pre, post = signal_samples_pre_peak, signal_samples_post_peak
+
     # Assume waveforms is shape (E, C, S)
     E, C, S = waveforms.shape
 
@@ -21,8 +23,8 @@ def split(waveforms, **kwargs):
 
       best_waveforms = waveforms[xp.arange(E), best_ch]   # (E, S)
 
-      if threshold is not None:
-          argmax_ref = xp.argmax(best_waveforms > threshold, axis=1)
+      if seed_charge_threshold is not None:
+          argmax_ref = xp.argmax(best_waveforms > seed_charge_threshold, axis=1)
       else:
           argmax_ref = xp.argmax(best_waveforms, axis=1)
 
@@ -56,8 +58,8 @@ def split(waveforms, **kwargs):
     elif fixed_peak_position_value is not None:
       argmax_idx = xp.full((E, C), fixed_peak_position_value)
     else:
-      if threshold is not None:
-        argmax_idx = xp.argmax(waveforms > threshold, axis=2)  # shape (E, C)
+      if seed_charge_threshold is not None:
+        argmax_idx = xp.argmax(waveforms > seed_charge_threshold, axis=2)  # shape (E, C)
       else:
         argmax_idx = xp.argmax(waveforms, axis=2)  # shape (E, C)
 

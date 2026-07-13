@@ -36,7 +36,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   t0 = time.time()
 
   if pre_process_routine is not None:
-    waves = get_routine(pre_process_routine)(waves, **kwargs)
+      waves = get_routine(pre_process_routine)(waves, **kwargs)
 
   if USE_CUDA:  print("after pre-processing, using in GPU:, ", int(mempool.used_bytes()/(1024**2)), "MB")
 
@@ -55,6 +55,8 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   values_std = xp.std(waves, axis=2)   # std of all values
 
   signal_window = waves[tuple(signal_window_3d_indices)]
+
+  print("signal_window.shape", signal_window.shape)
 
   del waves, signal_window_3d_indices
 

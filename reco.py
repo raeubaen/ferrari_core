@@ -159,6 +159,8 @@ def main(arguments):
     n_events = np.arange(reco_dict[list(reco_dict.keys())[0]]["mask"].shape[0])
     reco_dict["event_info"] = {"mask": np.ones((n_events.shape[0],), dtype=bool), "arrays": {"n_event": n_events}}
     for b in mode["global_branches"]: reco_dict["event_info"]["arrays"].update({b: tree[b].array(library="np")})
+    if mode["global_filter_routine"] is not None:
+      reco_dict["event_info"]["mask"] = get_routine(mode["global_filter_routine"])(reco_dict["event_info"])
 
     # merging
     time_merge = time.time()
