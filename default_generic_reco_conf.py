@@ -25,7 +25,6 @@ default_generic_reco_conf = {
     "interpolation_factor": None,
     "baseline_subtract": True,
     "baseline_samples": 10,
-    "raw_threshold_before_peak_finding": None,
     "save_only_central_region_info": False,
     "save_mean_rms_all_samples": False,
     "do_tau": False,
