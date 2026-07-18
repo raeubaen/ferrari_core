@@ -23,10 +23,7 @@ def split(waveforms, **kwargs):
 
       best_waveforms = waveforms[xp.arange(E), best_ch]   # (E, S)
 
-      if seed_charge_threshold is not None:
-          argmax_ref = xp.argmax(best_waveforms > seed_charge_threshold, axis=1)
-      else:
-          argmax_ref = xp.argmax(best_waveforms, axis=1)
+      argmax_ref = xp.argmax(best_waveforms, axis=1)
 
 
       if peak_pos_from_highest_ch:
@@ -56,12 +53,11 @@ def split(waveforms, **kwargs):
         argmax_idx = xp.argmax(masked_waveforms, axis=2)
 
     elif fixed_peak_position_value is not None:
+      print("FIXED PEAK POSITION!!!")
       argmax_idx = xp.full((E, C), fixed_peak_position_value)
+
     else:
-      if seed_charge_threshold is not None:
-        argmax_idx = xp.argmax(waveforms > seed_charge_threshold, axis=2)  # shape (E, C)
-      else:
-        argmax_idx = xp.argmax(waveforms, axis=2)  # shape (E, C)
+      argmax_idx = xp.argmax(waveforms, axis=2)  # shape (E, C)
 
     # Step 2: Build offsets
     window_offsets = xp.arange(-int(pre), int(post)).reshape(1, 1, -1)         # shape (1,1,pre+post)
