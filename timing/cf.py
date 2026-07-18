@@ -11,6 +11,7 @@ else:
 
 from ..registry import register_routine
 from .pseudo_t import pseudo_t
+from .pseudo_t import cubic_spline_interp
 
 def build_peak_interp(
     rise_valid,
@@ -52,11 +53,11 @@ def build_peak_interp(
     #    return xp.zeros((n_traces, 0), dtype=peak_segment.dtype) ##MC
 
 
-    peak_interp = ndimage.zoom(
+    peak_interp = cubic_spline_interp(
         peak_segment,
-        [1, interpolation_factor],
-        order=5, prefilter=False
+        interpolation_factor
     )
+
 
     peak_value = xp.max(peak_interp, axis=1)
 
@@ -74,5 +75,6 @@ def cf(signal_window, valid, max_idx, values_max, **kwargs):
 
     thresholds = build_peak_interp(rise_valid, rise_samples_pre_peak, rise_interp_left_samples, rise_interp_right_samples, interpolation_factor) * cf
     pseudo_t_array = pseudo_t(rise_valid, valid, thresholds, sampling_rate, interpolation_factor, max_idx, rise_interp_left_samples, rise_interp_right_samples, rise_samples_pre_peak)
+
 
   return {"time": pseudo_t_array}
