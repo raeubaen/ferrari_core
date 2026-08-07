@@ -8,7 +8,11 @@ else:
     import numpy as xp
 
 
-def split(waveforms, threshold=None, pre=5, post=10, baseline_samples=10, signal_baseline_gap=5, peak_pos_from_highest_ch=False, peak_accept_window_ns_from_highest_ch=None, sampling_rate=None):
+def split(waveforms, **kwargs):
+
+    globals().update(kwargs)
+
+    pre, post = signal_samples_pre_peak, signal_samples_post_peak
 
     # Assume waveforms is shape (E, C, S)
     E, C, S = waveforms.shape
@@ -19,10 +23,7 @@ def split(waveforms, threshold=None, pre=5, post=10, baseline_samples=10, signal
 
       best_waveforms = waveforms[xp.arange(E), best_ch]   # (E, S)
 
-      if threshold is not None:
-          argmax_ref = xp.argmax(best_waveforms > threshold, axis=1)
-      else:
-          argmax_ref = xp.argmax(best_waveforms, axis=1)
+      argmax_ref = xp.argmax(best_waveforms, axis=1)
 
 
       if peak_pos_from_highest_ch:
@@ -51,11 +52,12 @@ def split(waveforms, threshold=None, pre=5, post=10, baseline_samples=10, signal
         # Replace the previous peak positions/values by the best within the window
         argmax_idx = xp.argmax(masked_waveforms, axis=2)
 
+    elif fixed_peak_position_value is not None:
+      print("FIXED PEAK POSITION!!!")
+      argmax_idx = xp.full((E, C), fixed_peak_position_value)
+
     else:
-      if threshold is not None:
-        argmax_idx = xp.argmax(waveforms > threshold, axis=2)  # shape (E, C)
-      else:
-        argmax_idx = xp.argmax(waveforms, axis=2)  # shape (E, C)
+      argmax_idx = xp.argmax(waveforms, axis=2)  # shape (E, C)
 
     # Step 2: Build offsets
     window_offsets = xp.arange(-int(pre), int(post)).reshape(1, 1, -1)         # shape (1,1,pre+post)

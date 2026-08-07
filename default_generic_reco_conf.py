@@ -1,4 +1,6 @@
 default_generic_reco_conf = {
+    "fixed_peak_position_value": None,
+    "save_pre_processed_waves": False,
     "peak_pos_from_highest_ch": False,
     "peak_accept_window_ns_from_highest_ch": None,
     "signal_baseline_gap": 0,
@@ -6,7 +8,7 @@ default_generic_reco_conf = {
     "signal_samples_pre_peak": None,
     "signal_samples_post_peak": None,
     "charge_zerosup_peak_threshold": None,
-    "seed_charge_threshold": 0,
+    "seed_charge_threshold": None,
     "do_central_region": False,
     "fixed_central_region": None,
     "do_timing": False,
@@ -23,7 +25,6 @@ default_generic_reco_conf = {
     "interpolation_factor": None,
     "baseline_subtract": True,
     "baseline_samples": 10,
-    "raw_threshold_before_peak_finding": None,
     "save_only_central_region_info": False,
     "save_mean_rms_all_samples": False,
     "do_tau": False,
