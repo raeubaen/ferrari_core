@@ -42,7 +42,7 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
 
   max_idx, baselines, baselines_std, baseline_integral, signal_window_3d_indices = reco_utils.split(waves, **kwargs)
 
-  baseline_beginning = waves[:, :, :baseline_beginning_n_samples].mean(axis=2)
+  if baseline_beginning_n_samples is not None: baseline_beginning = waves[:, :, :baseline_beginning_n_samples].mean(axis=2)
 
   print(f"baselines evaluation took: {time.time() - t0}")
   t0 = time.time()
@@ -57,8 +57,6 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   signal_window = waves[tuple(signal_window_3d_indices)]
 
   print("signal_window.shape", signal_window.shape)
-
-  del waves, signal_window_3d_indices
 
   if USE_CUDA: print("after wave processing, using in GPU:, ", int(mempool.used_bytes()/(1024**2)), "MB")
 
@@ -76,6 +74,8 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
   if intercalib_dict is not None:
     for key in intercalib_dict:
       signal_window *= xp.asarray(intercalib_dict[key][None, :, None])
+
+  del waves, signal_window_3d_indices
 
   values_max = xp.max(signal_window, axis=2)
 
@@ -215,9 +215,13 @@ def generic_reco(waves, detector_name, gain_is_high=False, gain_list=None, **kwa
 
   per_ch_info = {
     f"{det}_peak_pos": max_idx, f"{det}_peak_time": max_idx/sampling_rate,
-    f"{det}_charge": charge, f"{det}_peak": values_max, f"{det}_baseline_mean": baselines, f"{det}_baseline_beginning": baseline_beginning,
+    f"{det}_charge": charge, f"{det}_peak": values_max, f"{det}_baseline_mean": baselines,
     f"{det}_baseline_std": baselines_std, f"{det}_baseline_integral": baseline_integral/baseline_samples*signal_window.shape[2],
   }
+
+
+  if baseline_beginning_n_samples is not None: per_ch_info.update({f"{det}_baseline_beginning": baseline_beginning})
+
 
   if save_pre_processed_waves:
     per_ch_info.update({f"{det}_pre_processed_waves": signal_window})

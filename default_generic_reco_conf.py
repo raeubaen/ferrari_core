@@ -1,4 +1,5 @@
 default_generic_reco_conf = {
+    "baseline_beginning_n_samples": None,
     "fixed_peak_position_value": None,
     "save_pre_processed_waves": False,
     "peak_pos_from_highest_ch": False,

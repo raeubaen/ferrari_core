@@ -164,7 +164,7 @@ def fit_pulse_iterative(waveforms, pulse, t, t_data_peak, t_template_peak, n_ite
         dt += xp.clip(xp.nan_to_num(-Ccorr / A_new, nan=0.0), -5, 5) ## NOT TO BE HARDCODED; SAVE MEEEEEEEEE!
         A = A_new
 
-        print("denom[0], A_new[0], Ccorr[0]: ", denom[0], A_new[0], Ccorr[0])
+        #print("denom[0], A_new[0], Ccorr[0]: ", denom[0], A_new[0], Ccorr[0])
 
     '''
     t_shift = t[None, :] - dt[:, None]
